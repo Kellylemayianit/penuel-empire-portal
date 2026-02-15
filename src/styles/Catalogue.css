@@ -1,0 +1,690 @@
+/**
+ * Catalogue.css - SEO-Rich, High-Conversion Services Page
+ * 
+ * Light Touch Luxury Aesthetic:
+ * - Generous 8rem+ section spacing
+ * - Serif fonts for headings
+ * - Clean white/cream backgrounds for sub-pages
+ * - Color accents only on badges, buttons, icons
+ * - Minimal shadows (0.05 opacity)
+ * - Premium breathing room
+ */
+
+/* ============================================================================
+   CATALOGUE CONTAINER
+   ============================================================================ */
+
+.catalogue {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ============================================================================
+   CATALOGUE HEADER
+   ============================================================================ */
+
+.catalogue-header {
+  position: relative;
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #1a1a1a 50%, var(--primary-color) 100%);
+  padding: 5rem 2rem;
+  overflow: hidden;
+}
+
+.catalogue-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(212, 175, 55, 0.1) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.header-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 700px;
+}
+
+.catalogue-header h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-family: var(--serif-font);
+  color: var(--secondary-color);
+  margin: 0 0 1.5rem 0;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.catalogue-header p {
+  font-size: 1.25rem;
+  color: #b0b0b0;
+  line-height: 1.8;
+  margin: 0;
+  font-weight: 300;
+}
+
+/* ============================================================================
+   BRANCH SECTION (STICKY)
+   ============================================================================ */
+
+.branch-section {
+  padding: 3rem 2rem;
+  background: linear-gradient(180deg, var(--primary-color) 0%, #0f0f0f 100%);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  position: sticky;
+  top: 70px;
+  z-index: 99;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.branch-info {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.branch-details h2 {
+  font-size: 2rem;
+  font-family: var(--serif-font);
+  color: var(--secondary-color);
+  margin: 0 0 0.8rem 0;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.branch-location {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.branch-location svg {
+  color: var(--secondary-color);
+  opacity: 0.8;
+}
+
+/* ============================================================================
+   BRANCH TOGGLE BUTTONS
+   ============================================================================ */
+
+.branch-toggle {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: flex-end;
+}
+
+.toggle-btn {
+  padding: 12px 32px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  color: var(--secondary-color);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  font-family: var(--sans-serif-font);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn:hover {
+  border-color: var(--secondary-color);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.toggle-btn.active {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+}
+
+/* ============================================================================
+   SERVICES SECTION
+   ============================================================================ */
+
+.services-section {
+  padding: 8rem 2rem;
+  background: linear-gradient(180deg, #0f0f0f 0%, var(--primary-color) 100%);
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.service-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.7), rgba(30, 30, 30, 0.7));
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.08),
+    transparent
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.service-card:hover {
+  border-color: var(--secondary-color);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.1);
+}
+
+.service-card:hover::before {
+  left: 100%;
+}
+
+/* ============================================================================
+   SERVICE BADGE (CONVERSION ELEMENT)
+   ============================================================================ */
+
+.service-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: var(--sans-serif-font);
+}
+
+.service-badge.member {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+}
+
+.service-badge.launch-offer {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--secondary-color);
+  border: 1px solid var(--secondary-color);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+   SERVICE CARD ELEMENTS
+   ============================================================================ */
+
+.service-icon {
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary-color);
+  position: relative;
+  z-index: 2;
+}
+
+.service-title {
+  font-size: 1.3rem;
+  font-family: var(--serif-font);
+  color: var(--text-color);
+  margin: 0;
+  font-weight: 600;
+  position: relative;
+  z-index: 2;
+}
+
+.service-description {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  flex-grow: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.service-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 2;
+}
+
+.feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--secondary-color);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: var(--sans-serif-font);
+}
+
+.service-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.service-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  font-family: var(--serif-font);
+}
+
+.service-btn {
+  padding: 8px 18px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  font-family: var(--sans-serif-font);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.service-btn:hover {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+}
+
+/* ============================================================================
+   NO SERVICES
+   ============================================================================ */
+
+.no-services {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   SERVICE GUIDE SECTION (SEO)
+   ============================================================================ */
+
+.service-guide {
+  padding: 8rem 2rem;
+  background: linear-gradient(180deg, var(--primary-color) 0%, #0f0f0f 100%);
+}
+
+.guide-header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 4rem;
+}
+
+.guide-header h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-family: var(--serif-font);
+  color: var(--secondary-color);
+  margin: 0 0 1rem 0;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.guide-header p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 300;
+}
+
+.guide-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  margin-bottom: 4rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.guide-block {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.7), rgba(30, 30, 30, 0.7));
+  padding: 2.5rem 2rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--secondary-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.guide-block:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.1);
+}
+
+.guide-block h3 {
+  font-size: 1.3rem;
+  font-family: var(--serif-font);
+  color: var(--secondary-color);
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.guide-block p {
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+  font-weight: 300;
+}
+
+.guide-keywords {
+  color: var(--secondary-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.8;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+/* ============================================================================
+   GUIDE CTA
+   ============================================================================ */
+
+.guide-cta {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+}
+
+.guide-cta h3 {
+  font-size: 1.5rem;
+  font-family: var(--serif-font);
+  color: var(--secondary-color);
+  margin: 0 0 1.5rem 0;
+  font-weight: 600;
+}
+
+.cta-btn {
+  padding: 14px 36px;
+  background: var(--secondary-color);
+  color: var(--primary-color);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--sans-serif-font);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cta-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.25);
+}
+
+/* ============================================================================
+   CATALOGUE CTA SECTION
+   ============================================================================ */
+
+.catalogue-cta {
+  padding: 8rem 2rem;
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #c9a026 100%);
+  text-align: center;
+}
+
+.cta-content {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.cta-content h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-family: var(--serif-font);
+  color: var(--primary-color);
+  margin: 0 0 1.5rem 0;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.cta-content p {
+  color: rgba(10, 10, 10, 0.85);
+  font-size: 1.1rem;
+  margin: 0 0 2.5rem 0;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+.cta-button {
+  padding: 14px 36px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--sans-serif-font);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0.75rem;
+  display: inline-block;
+}
+
+.cta-button.primary {
+  background: var(--primary-color);
+  color: var(--secondary-color);
+}
+
+.cta-button.primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.cta-button.secondary {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.cta-button.secondary:hover {
+  background: var(--primary-color);
+  color: var(--secondary-color);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+  .catalogue-header {
+    padding: 4rem 2rem;
+  }
+
+  .branch-section,
+  .services-section,
+  .service-guide,
+  .catalogue-cta {
+    padding: 6rem 2rem;
+  }
+
+  .branch-info {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .catalogue-header {
+    padding: 3rem 1.5rem;
+    min-height: 35vh;
+  }
+
+  .branch-section {
+    padding: 2rem 1.5rem;
+    top: 60px;
+  }
+
+  .branch-info {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .branch-toggle {
+    justify-content: center;
+  }
+
+  .branch-section,
+  .services-section,
+  .service-guide,
+  .catalogue-cta {
+    padding: 4rem 1.5rem;
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+  }
+
+  .guide-content {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-button {
+    display: block;
+    margin: 0.75rem 0;
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .catalogue-header {
+    padding: 2rem 1rem;
+  }
+
+  .catalogue-header h1 {
+    margin-bottom: 1rem;
+  }
+
+  .branch-section {
+    padding: 1.5rem 1rem;
+    top: 60px;
+  }
+
+  .branch-info {
+    gap: 1rem;
+  }
+
+  .branch-toggle {
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+
+  .toggle-btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+
+  .branch-section,
+  .services-section,
+  .service-guide,
+  .catalogue-cta {
+    padding: 2.5rem 1rem;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .service-card {
+    padding: 1.5rem;
+  }
+
+  .service-title {
+    font-size: 1.1rem;
+  }
+
+  .branch-details h2 {
+    font-size: 1.5rem;
+  }
+
+  .guide-block {
+    padding: 1.5rem;
+  }
+
+  .guide-cta {
+    padding: 2rem 1rem;
+  }
+
+  .cta-content h2 {
+    margin-bottom: 1rem;
+  }
+
+  .cta-button {
+    padding: 12px 24px;
+    font-size: 0.85rem;
+  }
+}
