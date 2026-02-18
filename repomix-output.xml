@@ -1,0 +1,119 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/**/*.{jsx,js,css,json}, index.html
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+index.html
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#8B4513" />
+    <meta
+      name="description"
+      content="Penuel Empire Portal - Hub-and-Spoke Management System for Penuel Plaza (Luxury Hotel) and Penuel Stopover (Retail/Auto Services)" />
+    <meta name="keywords" content="penuel, hotel, retail, automotive, amboseli, kenya, luxury, stopover" />
+    <meta name="author" content="Penuel Empire" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+
+    <!-- Apple Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Penuel Portal" />
+
+    <!-- Windows Meta Tags -->
+    <meta name="msapplication-TileColor" content="#8B4513" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <title>Penuel Empire Portal - Hub-and-Spoke Management System</title>
+  </head>
+  <body>
+    <!-- Main React Root -->
+    <div id="root"></div>
+
+    <!-- Vite Module Entry Point - CORRECT PATH -->
+    <script type="module" src="/src/index.jsx"></script>
+
+    <!-- Fallback for JavaScript disabled -->
+    <noscript>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background: linear-gradient(135deg, #f5f5dc 0%, #fafaf8 100%);
+          font-family: &quot;Segoe UI&quot;, Tahoma, Geneva, Verdana, sans-serif;
+          text-align: center;
+          padding: 2rem;
+        ">
+        <div>
+          <h1 style="color: #8b4513; margin-bottom: 1rem">Penuel Empire Portal</h1>
+          <p style="color: #2c2416; font-size: 1.1rem">
+            This application requires JavaScript to be enabled in your browser.
+            <br />
+            Please enable JavaScript and reload the page.
+          </p>
+        </div>
+      </div>
+    </noscript>
+  </body>
+</html>
+</file>
+
+</files>

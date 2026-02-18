@@ -2,170 +2,273 @@ import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useBusinessContext } from './context/BusinessContext';
 
-// Components
-import Navbar from './components/Navbar';
+// ============================================================================
+// PAGES & COMPONENTS
+// ============================================================================
 
-// Pages
+import Navbar from './components/Navbar';
+import DashboardLayout from './components/DashboardLayout';
+import DashboardHome from './pages/DashboardHome';
+
+// Import other pages
 import Home from './pages/Home';
 import About from './pages/About';
 import Catalogue from './pages/Catalogue';
+import Login from './pages/Login';
 
-// Styles
-import './styles/App.css';
+// ============================================================================
+// STYLES
+// ============================================================================
+
+import './styles/Dashboard.css';
 
 /**
- * Penuel Empire Portal - Elite Unified Theme Engine
- *
- * Philosophy: "One Empire, Multiple Personalities"
+ * App.jsx - CLEAN VERSION (No Router)
  * 
- * Architecture:
- * - Base Palette: Deep Charcoal (#0a0a0a), Refined White (#fcfaf2), Muted Grey
- * - Accent Variable: Flips between Gold (#d4af37) and Blue (#0077b6)
- * - Navbar: Identical across all pages (only accent color changes)
- * - Home Page: Dark entrance, all base colors match sub-pages
- * - Sub-pages: Airy elegance with minimal color accents
- * - All transitions: Smooth 0.5s
+ * Philosophy: "The Empire Pulse Control Center"
  * 
- * Result: Cohesive brand identity that adapts to business context
+ * CRITICAL NOTES:
+ * - NO <Router> or <BrowserRouter> tags in this file
+ * - The Router is provided by index.jsx
+ * - This component only handles routing logic via <Routes>
+ * - Uses useLocation to manage Navbar visibility
+ * - Manages Aura Sync at app root level
+ * 
+ * Key Features:
+ * - Conditional Navbar rendering
+ * - Complete routing structure
+ * - Aura Sync master synchronizer
+ * - DashboardHome integration (LIVE)
+ * - All placeholder routes ready
+ * 
+ * STATUS: PRODUCTION READY (No Router nesting errors)
  */
 
 // ============================================================================
-// ELITE THREE-TIER COLOR STRATEGY (Unified Base + Dynamic Accent)
+// ROUTE CONFIGURATION
 // ============================================================================
 
-const THEMES = {
-  // TIER 1: HOME INDEX (Professional Dark Entry)
-  // Same base palette as all pages, only accent changes
-  homeIndex: {
-    name: 'Home Index',
-    vibe: 'Empire Gateway',
-    colors: {
-      // BASE PALETTE (Consistent across all pages)
-      'primary-color': '#0a0a0a',         // Deep Black
-      'secondary-color': '#d4af37',       // Gold (flips to blue)
-      'text-color': '#f8f9fa',            // Clean off-white
-      'text-muted': '#a0a0a0',            // Muted grey
-      
-      // ACCENT UTILITIES
-      'accent-color': '#111111',
-      'accent-light': '#e8d9a7',
-      'border-accent': '#d4af37',
-      'card-shadow': 'rgba(0, 0, 0, 0.3)',
-    },
-  },
-
-  // TIER 2: PENUEL PLAZA (Airy Elegance)
-  // Light background, gold accents only
-  plaza: {
-    name: 'Penuel Plaza',
-    vibe: 'Elegant Luxury',
-    colors: {
-      // BASE PALETTE (Consistent across all pages)
-      'primary-color': '#fcfaf2',         // Refined white
-      'secondary-color': '#d4af37',       // Gold accent
-      'text-color': '#2a2a2a',            // Deep charcoal
-      'text-muted': '#7a7a7a',            // Muted grey
-      
-      // ACCENT UTILITIES
-      'accent-color': '#f5f1e8',
-      'accent-light': '#e5d4b3',
-      'border-accent': '#d4af37',
-      'card-shadow': 'rgba(0, 0, 0, 0.05)',
-    },
-  },
-
-  // TIER 3: PENUEL STOPOVER (Clean Professional)
-  // Light background, blue accents only
-  stopover: {
-    name: 'Penuel Stopover',
-    vibe: 'Professional Fresh',
-    colors: {
-      // BASE PALETTE (Consistent across all pages)
-      'primary-color': '#fafbfc',         // Clean white
-      'secondary-color': '#0077b6',       // Blue accent (replaces gold)
-      'text-color': '#1a2a3a',            // Navy charcoal
-      'text-muted': '#6b7a8a',            // Muted grey-navy
-      
-      // ACCENT UTILITIES
-      'accent-color': '#e8f0f7',
-      'accent-light': '#4a9fd8',
-      'border-accent': '#0077b6',
-      'card-shadow': 'rgba(0, 0, 0, 0.05)',
-    },
-  },
-};
+const NAVBAR_HIDDEN_ROUTES = ['/gate', '/dashboard'];
 
 // ============================================================================
-// THEME SELECTOR HELPER
+// APP COMPONENT
 // ============================================================================
 
-const getThemeForPath = (pathname, activeBranch) => {
-  if (pathname === '/') {
-    return THEMES.homeIndex;
-  }
-
-  if (pathname === '/catalogue' || pathname === '/about') {
-    return activeBranch === 'plaza' ? THEMES.plaza : THEMES.stopover;
-  }
-
-  return null;
-};
-
-// ============================================================================
-// MAIN APP COMPONENT
-// ============================================================================
-
-function App() {
-  const location = useLocation();
+const App = () => {
   const { activeBranch } = useBusinessContext();
+  const location = useLocation();
 
-  /**
-   * Elite Dynamic Theme Injection
-   * 
-   * Injects unified base colors + dynamic accent only
-   * Creates seamless transitions across all pages
-   * Navbar stays consistent (only accent color changes)
-   */
+  // =========================================================================
+  // AURA SYNC MASTER EFFECT
+  // =========================================================================
+  // Root-level theme synchronization
+  // Updates body classes and CSS variables for instant color changes
+  // =========================================================================
+
   useEffect(() => {
-    const themeToApply = getThemeForPath(location.pathname, activeBranch);
+    if (activeBranch) {
+      // Step 1: Update document.body.classList for CSS cascading
+      document.body.classList.remove('theme-plaza', 'theme-stopover');
+      document.body.classList.add(`theme-${activeBranch}`);
 
-    if (themeToApply) {
+      // Step 2: Update CSS variables for instant color updates
       const root = document.documentElement;
 
+      if (activeBranch === 'plaza') {
+        root.style.setProperty('--secondary-color', '#d4af37');
+      } else if (activeBranch === 'stopover') {
+        root.style.setProperty('--secondary-color', '#0077b6');
+      }
+
+      // Step 3: Logging for debugging
+      console.log(`🎨 [App] AURA SYNC: Theme set to ${activeBranch}`);
+      console.log(`📍 [App] Body class: theme-${activeBranch}`);
       console.log(
-        `✨ Elite Theme Applied: ${themeToApply.name} (${themeToApply.vibe})`
-      );
-
-      // Inject CSS variables
-      Object.entries(themeToApply.colors).forEach(([varName, hexValue]) => {
-        root.style.setProperty(`--${varName}`, hexValue);
-      });
-
-      // Update body class
-      document.body.classList.remove(
-        'theme-home-index',
-        'theme-plaza',
-        'theme-stopover'
-      );
-      document.body.classList.add(
-        `theme-${themeToApply.name.toLowerCase().replace(/\s+/g, '-')}`
+        `🌈 [App] CSS variable: --secondary-color = ${
+          activeBranch === 'plaza' ? '#d4af37' : '#0077b6'
+        }`
       );
     }
-  }, [location.pathname, activeBranch]);
+  }, [activeBranch]);
+
+  // =========================================================================
+  // NAVBAR VISIBILITY LOGIC
+  // =========================================================================
+  // Hide navbar on auth pages (/gate) and dashboard pages (/dashboard)
+  // =========================================================================
+
+  const shouldShowNavbar = !NAVBAR_HIDDEN_ROUTES.includes(location.pathname);
+
+  // =========================================================================
+  // RENDER
+  // =========================================================================
 
   return (
-    <>
-      {/* Unified Navbar - Identical on all pages */}
-      <Navbar />
+    <div className="app">
+      {/* ===== CONDITIONAL NAVBAR ===== */}
+      {shouldShowNavbar && <Navbar />}
 
-      {/* Content Routes with Dynamic Theming */}
+      {/* ===== MAIN ROUTING ===== */}
       <Routes>
+        {/* ===== PUBLIC ROUTES ===== */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/catalogue" element={<Catalogue />} />
+
+        {/* ===== AUTH GATE ===== */}
+        <Route path="/gate" element={<Login />} />
+
+        {/* ===== DASHBOARD ROUTES ===== */}
+        {/* Main Dashboard Home - LIVE (DashboardHome.jsx) */}
+        <Route
+          path="/dashboard"
+          element={
+            <DashboardLayout>
+              <DashboardHome />
+            </DashboardLayout>
+          }
+        />
+
+        {/* Dashboard Operations - Placeholder */}
+        <Route
+          path="/dashboard/operations"
+          element={
+            <DashboardLayout>
+              <div className="dashboard-page-header">
+                <div className="dashboard-page-title">
+                  <h1>Operations Feed</h1>
+                  <p>Real-time operational updates and monitoring</p>
+                </div>
+              </div>
+              <div className="dashboard-content">
+                <div className="dashboard-card">
+                  <h3>Operations Dashboard</h3>
+                  <p>
+                    This page is a placeholder. Import the real Operations
+                    component here when ready.
+                  </p>
+                </div>
+              </div>
+            </DashboardLayout>
+          }
+        />
+
+        {/* Dashboard Staff - Placeholder */}
+        <Route
+          path="/dashboard/staff"
+          element={
+            <DashboardLayout>
+              <div className="dashboard-page-header">
+                <div className="dashboard-page-title">
+                  <h1>Staff Management</h1>
+                  <p>Manage team members and assignments</p>
+                </div>
+              </div>
+              <div className="dashboard-content">
+                <div className="dashboard-card">
+                  <h3>Staff Dashboard</h3>
+                  <p>
+                    This page is a placeholder. Import the real Staff Management
+                    component here when ready.
+                  </p>
+                </div>
+              </div>
+            </DashboardLayout>
+          }
+        />
+
+        {/* Dashboard Financials - Placeholder */}
+        <Route
+          path="/dashboard/financials"
+          element={
+            <DashboardLayout>
+              <div className="dashboard-page-header">
+                <div className="dashboard-page-title">
+                  <h1>Financial Reports</h1>
+                  <p>Revenue, expenses, and financial analysis (Owner only)</p>
+                </div>
+              </div>
+              <div className="dashboard-content">
+                <div className="dashboard-card">
+                  <h3>Financial Dashboard</h3>
+                  <p>
+                    This page is a placeholder. Import the real Financial
+                    Reports component here when ready.
+                  </p>
+                </div>
+              </div>
+            </DashboardLayout>
+          }
+        />
+
+        {/* Dashboard Settings - Placeholder */}
+        <Route
+          path="/dashboard/settings"
+          element={
+            <DashboardLayout>
+              <div className="dashboard-page-header">
+                <div className="dashboard-page-title">
+                  <h1>Global Settings</h1>
+                  <p>System configuration and preferences (Owner only)</p>
+                </div>
+              </div>
+              <div className="dashboard-content">
+                <div className="dashboard-card">
+                  <h3>Settings Dashboard</h3>
+                  <p>
+                    This page is a placeholder. Import the real Settings
+                    component here when ready.
+                  </p>
+                </div>
+              </div>
+            </DashboardLayout>
+          }
+        />
+
+        {/* Dashboard Aura - Placeholder */}
+        <Route
+          path="/dashboard/aura"
+          element={
+            <DashboardLayout>
+              <div className="dashboard-page-header">
+                <div className="dashboard-page-title">
+                  <h1>Aura Analytics</h1>
+                  <p>Advanced analytics and insights (Owner only)</p>
+                </div>
+              </div>
+              <div className="dashboard-content">
+                <div className="dashboard-card">
+                  <h3>Aura Analytics Dashboard</h3>
+                  <p>
+                    This page is a placeholder. Import the real Aura Analytics
+                    component here when ready.
+                  </p>
+                </div>
+              </div>
+            </DashboardLayout>
+          }
+        />
+
+        {/* ===== 404 FALLBACK ===== */}
+        <Route
+          path="*"
+          element={
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '4rem 2rem',
+                color: 'white',
+                minHeight: '100vh',
+              }}
+            >
+              <h1>404 - Page Not Found</h1>
+              <p>The page you're looking for doesn't exist.</p>
+            </div>
+          }
+        />
       </Routes>
-    </>
+    </div>
   );
-}
+};
 
 export default App;
