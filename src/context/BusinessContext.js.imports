@@ -1,6 +1,0 @@
-import React, { createContext, useState, useCallback, useMemo, useEffect } from 'react';
-import plazaData from '../data/plaza.json';
-import stopoverData from '../data/stopover.json';
-
-// Rest of your BusinessContext.js code continues below...
-// (Keep all the existing context logic and exports)
