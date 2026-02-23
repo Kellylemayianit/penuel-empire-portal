@@ -111,18 +111,6 @@ const Sidebar = ({ userRole }) => {
     if (activeBranch !== newBranch) {
       // Step 1: Update BusinessContext
       toggleBranch(newBranch);
-
-      // Step 2: Force immediate DOM update for Aura Sync
-      // This ensures colors change instantly, not delayed by React batching
-      document.body.classList.remove('theme-plaza', 'theme-stopover');
-      document.body.classList.add(`theme-${newBranch}`);
-
-      // Step 3: Log for debugging
-      console.log(`✨ [Sidebar] Theme switched to: ${newBranch}`);
-      console.log(`🎨 [Sidebar] Body classes updated: theme-${newBranch}`);
-
-      // Step 4: Close dropdown for better UX
-      setToggleOpen(false);
     }
   };
 

@@ -14,100 +14,157 @@ import {
 import '../styles/Dashboard.css';
 
 /**
- * DashboardHeader.jsx - FINAL PRODUCTION VERSION
- * 
- * Philosophy: "Executive Command Header with Single Source of Truth"
- * 
- * Key Features:
- * - Uses useBusinessContext() ONLY for branch state
- * - No local useState for branch tracking
- * - Unified handleBranchToggle that calls document.body.classList
- * - Sliding segmented control with smooth 0.3s animation
- * - Active classes tied directly to activeBranch from context
- * - Synced with Sidebar via same toggle logic
- * - Breadcrumb auto-updates on navigation
- * - Export dropdown and notification badge
+ * DashboardHeader.jsx — Search-Sanitized + DOM-Clean Version
+ *
+ * CHANGES FROM PREVIOUS VERSION:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 1. handleSearch:  now sanitizes input before storing it in state.
+ *    A regex strips all HTML tags (< ... >) before the value is written to
+ *    `searchQuery`, preventing XSS payloads from ever reaching React's
+ *    virtual DOM as raw markup.  The sanitized query + current branch are
+ *    logged so the backend integration point is immediately obvious.
+ *
+ * 2. handleBranchToggle: calls only toggleBranch(newBranch).  No
+ *    document.body.classList or root.style.setProperty — those side-effects
+ *    are owned exclusively by the useEffect in BusinessContext.jsx.
+ *
+ * 3. JSDoc comment block updated to reflect current (accurate) architecture.
  */
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const ROUTE_LABELS = {
-  '/dashboard': 'Dashboard Home',
-  '/dashboard/operations': 'Operations Feed',
-  '/dashboard/staff': 'Staff Management',
-  '/dashboard/financials': 'Financial Reports',
-  '/dashboard/settings': 'Global Settings',
-  '/dashboard/aura': 'Aura Analytics',
+  '/dashboard':             'Dashboard Home',
+  '/dashboard/operations':  'Operations Feed',
+  '/dashboard/staff':       'Staff Management',
+  '/dashboard/financials':  'Financial Reports',
+  '/dashboard/settings':    'Global Settings',
+  '/dashboard/aura':        'Aura Analytics',
 };
+
+/**
+ * sanitizeInput
+ *
+ * Strips every HTML tag from a raw string using a single regex pass.
+ *
+ * Mechanism: replaces any sequence starting with '<', containing any
+ * characters (non-greedy), and ending with '>' — i.e. the pattern
+ * for any HTML or pseudo-HTML tag.
+ *
+ * Examples:
+ *   sanitizeInput('<script>alert(1)</script>') → 'alert(1)'
+ *   sanitizeInput('<img src=x onerror=alert(1)>') → ''
+ *   sanitizeInput('<b>bold</b>')                → 'bold'
+ *   sanitizeInput('room 302')                   → 'room 302'  (unchanged)
+ *
+ * MILESTONE 2: Replace with DOMPurify.sanitize(value, { ALLOWED_TAGS: [] })
+ * for comprehensive sanitization including encoded entities (&lt; etc.).
+ *
+ * @param {string} raw - The raw string from the input event.
+ * @returns {string} The string with all HTML tags removed.
+ */
+const sanitizeInput = (raw) => raw.replace(/<[^>]*>/g, '');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 const DashboardHeader = () => {
   const location = useLocation();
   const { activeBranch, toggleBranch } = useBusinessContext();
-  const [searchFocus, setSearchFocus] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [notificationOpen, setNotificationOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
 
-  // Generate breadcrumb - auto-updates on navigation
+  const [searchFocus,      setSearchFocus]      = useState(false);
+  const [searchQuery,      setSearchQuery]      = useState('');
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [exportOpen,       setExportOpen]       = useState(false);
+  const [unreadCount,      setUnreadCount]      = useState(3);
+
+  // Breadcrumb — auto-updates on every navigation.
   const currentPage = ROUTE_LABELS[location.pathname] || 'Dashboard';
 
-  /**
-   * UNIFIED BRANCH TOGGLE - Single Source of Truth
-   * 
-   * This function:
-   * 1. Updates BusinessContext (activeBranch)
-   * 2. Forces immediate DOM update (body.classList) for Aura Sync
-   * 3. Ensures theme changes even if React batches updates
-   * 4. Visual feedback tied to activeBranch value
-   * 
-   * CRITICAL: This is the EXACT same function in Sidebar
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // BRANCH TOGGLE
+  //
+  // Delegates entirely to BusinessContext. The context's useEffect watches
+  // activeBranch and applies all DOM / CSS variable changes in one place.
+  // This component has ZERO direct DOM manipulation for theming.
+  // ─────────────────────────────────────────────────────────────────────────
   const handleBranchToggle = (newBranch) => {
     if (activeBranch !== newBranch) {
-      // Step 1: Update BusinessContext
       toggleBranch(newBranch);
-
-      // Step 2: Force immediate DOM update for Aura Sync
-      // This ensures colors change instantly, not delayed by React batching
-      document.body.classList.remove('theme-plaza', 'theme-stopover');
-      document.body.classList.add(`theme-${newBranch}`);
-
-      // Step 3: Log for debugging
-      console.log(`✨ [Header] Theme switched to: ${newBranch}`);
-      console.log(`🎨 [Header] Body classes updated: theme-${newBranch}`);
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // SEARCH — XSS SANITIZATION
+  //
+  // Flow:
+  //   1. User types in the search input (onChange fires).
+  //   2. Raw value passes through sanitizeInput() — all HTML tags stripped.
+  //   3. The SANITIZED string is written to state — never the raw value.
+  //   4. React renders the controlled input with `value={searchQuery}`, so
+  //      the input box itself reflects the stripped text instantly.
+  //   5. The sanitized query + activeBranch are logged, marking the exact
+  //      integration point where a backend fetch call will go.
+  //
+  // Why store sanitized (not raw) in state?
+  //   Because `value={searchQuery}` means the input renders whatever is in
+  //   state. Storing the sanitized string gives the user immediate visual
+  //   feedback that HTML tags are being stripped — and ensures no downstream
+  //   consumer of `searchQuery` can receive a dirty string.
+  // ─────────────────────────────────────────────────────────────────────────
   const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-    // TODO: Implement actual search functionality
+    const sanitized = sanitizeInput(e.target.value);
+    setSearchQuery(sanitized);
+
+    // Backend integration point — these two values are all a search API needs.
+    // MILESTONE 2: Replace this log with:
+    //   fetch(`/api/search?q=${encodeURIComponent(sanitized)}&branch=${activeBranch}`)
+    if (import.meta.env.DEV) {
+      console.log(`[Search] Query: "${sanitized}" | Branch: ${activeBranch}`);
+    }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // EXPORT / NOTIFICATION HANDLERS (unchanged in logic, console guards added)
+  // ─────────────────────────────────────────────────────────────────────────
   const handleExportClick = (format) => {
-    console.log(`📥 Exporting as ${format}`);
-    // TODO: Implement actual export functionality
+    // MILESTONE 2: POST /api/export { format, branch: activeBranch }
+    if (import.meta.env.DEV) {
+      console.log(`[Export] Format: ${format} | Branch: ${activeBranch}`);
+    }
     setExportOpen(false);
   };
 
   const handleNotificationClick = (notificationId) => {
-    console.log(`✅ Notification read: ${notificationId}`);
-    // TODO: Mark notification as read
+    // MILESTONE 2: PATCH /api/notifications/${notificationId}/read
+    if (import.meta.env.DEV) {
+      console.log(`[Notification] Marked read: ${notificationId}`);
+    }
     if (unreadCount > 0) {
       setUnreadCount(unreadCount - 1);
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <header className="dashboard-header">
-      {/* ===== LEFT SECTION: BREADCRUMB + SEARCH ===== */}
+
+      {/* ===== LEFT: BREADCRUMB + SEARCH ===== */}
       <div className="header-left">
-        {/* Breadcrumb Navigation */}
+
+        {/* Breadcrumb */}
         <div className="header-breadcrumb">
           <span className="breadcrumb-root">Dashboard</span>
           <ChevronRight size={16} className="breadcrumb-separator" />
           <span className="breadcrumb-current">{currentPage}</span>
         </div>
 
-        {/* Quick Search Bar */}
+        {/* Search — `value` is always the sanitized string from state */}
         <div className={`header-search ${searchFocus ? 'focused' : ''}`}>
           <Search size={18} className="search-icon" />
           <input
@@ -118,40 +175,43 @@ const DashboardHeader = () => {
             onFocus={() => setSearchFocus(true)}
             onBlur={() => setSearchFocus(false)}
             className="search-input"
+            aria-label="Search dashboard"
+            maxLength={200}
           />
         </div>
       </div>
 
-      {/* ===== RIGHT SECTION: STATUS, SWITCHER, ACTIONS ===== */}
+      {/* ===== RIGHT: STATUS + SWITCHER + ACTIONS ===== */}
       <div className="header-right">
-        {/* System Heartbeat Indicator */}
+
+        {/* System Heartbeat */}
         <div className="system-heartbeat">
           <div className="heartbeat-dot"></div>
           <span className="heartbeat-label">Live Sync</span>
         </div>
 
-        {/* High-End Segmented Control with Sliding Background */}
+        {/* Segmented Branch Switcher */}
         <div className="context-switcher">
-          {/* Sliding background - position tied to activeBranch via CSS */}
+          {/* Sliding background — position driven by CSS class, not JS */}
           <div className={`switcher-slider ${activeBranch}`}></div>
 
-          {/* Plaza Button - Active class tied to activeBranch */}
           <button
             className={`switcher-segment plaza-segment ${activeBranch === 'plaza' ? 'active' : ''}`}
             onClick={() => handleBranchToggle('plaza')}
             title="Switch to Plaza"
             aria-label="Plaza Context"
+            aria-pressed={activeBranch === 'plaza'}
           >
             <Sun size={18} />
             <span>Plaza</span>
           </button>
 
-          {/* Stopover Button - Active class tied to activeBranch */}
           <button
             className={`switcher-segment stopover-segment ${activeBranch === 'stopover' ? 'active' : ''}`}
             onClick={() => handleBranchToggle('stopover')}
             title="Switch to Stopover"
             aria-label="Stopover Context"
+            aria-pressed={activeBranch === 'stopover'}
           >
             <Moon size={18} />
             <span>Stopover</span>
@@ -160,7 +220,8 @@ const DashboardHeader = () => {
 
         {/* Action Icons */}
         <div className="header-actions">
-          {/* Export/Download with Dropdown */}
+
+          {/* Export */}
           <div className="export-container">
             <button
               className="action-btn export-btn"
@@ -172,7 +233,6 @@ const DashboardHeader = () => {
               <Download size={20} />
             </button>
 
-            {/* Export Dropdown */}
             {exportOpen && (
               <div
                 className="export-dropdown"
@@ -197,13 +257,13 @@ const DashboardHeader = () => {
             )}
           </div>
 
-          {/* Notifications Bell */}
+          {/* Notifications */}
           <div className="notification-container">
             <button
               className="action-btn notification-btn"
               onClick={() => setNotificationOpen(!notificationOpen)}
               title="Notifications"
-              aria-label="Notifications"
+              aria-label={`Notifications — ${unreadCount} unread`}
             >
               <Bell size={20} />
               {unreadCount > 0 && (
@@ -211,7 +271,6 @@ const DashboardHeader = () => {
               )}
             </button>
 
-            {/* Notifications Dropdown */}
             {notificationOpen && (
               <div className="notifications-dropdown">
                 <div className="notifications-header">
@@ -219,13 +278,19 @@ const DashboardHeader = () => {
                   <button
                     className="close-btn"
                     onClick={() => setNotificationOpen(false)}
+                    aria-label="Close notifications"
                   >
                     ×
                   </button>
                 </div>
 
                 <div className="notifications-content">
-                  <div className="notification-item" onClick={() => handleNotificationClick(1)}>
+                  <div
+                    className="notification-item"
+                    onClick={() => handleNotificationClick(1)}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="notification-dot-small"></div>
                     <div className="notification-text">
                       <p className="notification-title">System Update</p>
@@ -233,7 +298,12 @@ const DashboardHeader = () => {
                     </div>
                   </div>
 
-                  <div className="notification-item" onClick={() => handleNotificationClick(2)}>
+                  <div
+                    className="notification-item"
+                    onClick={() => handleNotificationClick(2)}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="notification-dot-small"></div>
                     <div className="notification-text">
                       <p className="notification-title">New Staff Member Added</p>
@@ -241,7 +311,12 @@ const DashboardHeader = () => {
                     </div>
                   </div>
 
-                  <div className="notification-item" onClick={() => handleNotificationClick(3)}>
+                  <div
+                    className="notification-item"
+                    onClick={() => handleNotificationClick(3)}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="notification-dot-small"></div>
                     <div className="notification-text">
                       <p className="notification-title">Operations Report Generated</p>
@@ -256,6 +331,7 @@ const DashboardHeader = () => {
               </div>
             )}
           </div>
+
         </div>
       </div>
     </header>

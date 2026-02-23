@@ -1,230 +1,228 @@
 /**
- * BusinessContext - Milestone 1 Refactor
- * Single Source of Truth for Penuel Empire Portal state management
+ * BusinessContext.jsx — Milestone 1 Refactor + Aura Sync Centralization
  *
- * Manages:
- * - Branch state (plaza / stopover)
- * - Toast notifications (global state + auto-dismiss)
- * - Dynamic theming (primary, secondary, accent, dark, success, warning, light, font)
- * - Branch information (name, location, currency)
- * - Data access (rooms, experiences, retail, auto services, dining)
- * - Payment processing (placeholder for Milestone 2)
+ * AURA SYNC ARCHITECTURE (Post-Audit Fix):
+ * ─────────────────────────────────────────
+ * Single source of truth for ALL theme application.
+ * One useEffect watches activeBranch and handles:
+ *   1. document.body.classList  (CSS cascade via body.theme-* classes)
+ *   2. document.documentElement CSS variables (instant color updates)
+ *   3. localStorage persistence (survives page refresh)
  *
- * Exports via useBusinessContext() hook:
- * - toast, showNotification
- * - activeBranch, toggleBranch
- * - getActiveBranchData, getActiveBranchTheme, getBranchInfo
- * - plazaData, stopoverData
- * - processPayment (M-Pesa integration pending)
+ * No other component should touch body.classList or CSS variables
+ * for theming purposes. Components only call toggleBranch().
  */
 
-import React, { createContext, useState, useCallback, useMemo, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import plazaData from "../data/plaza.json";
 import stopoverData from "../data/stopover.json";
 
 export const BusinessContext = createContext();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AURA CONFIG — Single definition of all branch theme values.
+// Update colors here only; the useEffect below applies them everywhere.
+// ─────────────────────────────────────────────────────────────────────────────
+const AURA_CONFIG = {
+  plaza: {
+    bodyClass:       "theme-plaza",
+    primaryColor:    "#0a0a0a",
+    secondaryColor:  "#d4af37",   // Gold
+  },
+  stopover: {
+    bodyClass:       "theme-stopover",
+    primaryColor:    "#001f3f",   // Deep Navy
+    secondaryColor:  "#0074d9",   // Blue
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERSISTENCE KEY — used for localStorage read/write.
+// ─────────────────────────────────────────────────────────────────────────────
+const BRANCH_STORAGE_KEY = "activeBranch";
+
+/**
+ * Reads the last-saved branch from localStorage.
+ * Falls back to 'plaza' if nothing is stored or the value is invalid.
+ */
+function getInitialBranch() {
+  const stored = localStorage.getItem(BRANCH_STORAGE_KEY);
+  return stored === "plaza" || stored === "stopover" ? stored : "plaza";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVIDER
+// ─────────────────────────────────────────────────────────────────────────────
 export const BusinessProvider = ({ children }) => {
-  // ===== STATE MANAGEMENT =====
 
-  // Branch State
-  const [activeBranch, setActiveBranch] = useState("plaza");
+  // Initialize from localStorage so the theme is correct on first render/refresh.
+  const [activeBranch, setActiveBranch] = useState(getInitialBranch);
 
-  // Toast Notification State (NEW - Milestone 1)
   const [toast, setToast] = useState({
     visible: false,
     message: "",
-    type: "success" // success, info, error
+    type: "success",
   });
 
-  // Payment State (Milestone 2)
   const [paymentStatus, setPaymentStatus] = useState("idle");
   const [paymentError, setPaymentError] = useState(null);
 
-  // ===== BRANCH MANAGEMENT =====
+  // ───────────────────────────────────────────────────────────────────────────
+  // AURA SYNC — THE ONE PLACE WHERE THEME IS APPLIED TO THE DOM.
+  //
+  // Runs on mount (applying the persisted or default theme immediately)
+  // and every time activeBranch changes (applying the new theme instantly).
+  //
+  // Responsibilities:
+  //   • Swap body class (enables CSS rules like body.theme-stopover .x { })
+  //   • Set --primary-color and --secondary-color on :root
+  //   • Persist the chosen branch to localStorage
+  // ───────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const config = AURA_CONFIG[activeBranch];
+    if (!config) return;
 
-  /**
-   * Toggle between 'plaza' and 'stopover' branches
-   * Clears payment state and hides toast when switching
-   */
+    // 1. Body class — remove all known theme classes, add the current one.
+    const allBodyClasses = Object.values(AURA_CONFIG).map((c) => c.bodyClass);
+    document.body.classList.remove(...allBodyClasses);
+    document.body.classList.add(config.bodyClass);
+
+    // 2. CSS variables on :root for instant color cascading.
+    const root = document.documentElement;
+    root.style.setProperty("--primary-color",   config.primaryColor);
+    root.style.setProperty("--secondary-color", config.secondaryColor);
+
+    // 3. Persist to localStorage so refresh restores the correct theme.
+    localStorage.setItem(BRANCH_STORAGE_KEY, activeBranch);
+
+    // 4. Development log — remove or guard with import.meta.env.DEV in production.
+    if (import.meta.env.DEV) {
+      console.log(
+        `[AuraSync] Branch: ${activeBranch} | ` +
+        `Primary: ${config.primaryColor} | ` +
+        `Secondary: ${config.secondaryColor}`
+      );
+    }
+  }, [activeBranch]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // BRANCH MANAGEMENT
+  // ───────────────────────────────────────────────────────────────────────────
   const toggleBranch = useCallback((branch) => {
     if (branch === "plaza" || branch === "stopover") {
       setActiveBranch(branch);
-      // Reset payment state on branch switch
       setPaymentStatus("idle");
       setPaymentError(null);
-      // Hide toast on branch switch
       setToast((prev) => ({ ...prev, visible: false }));
     } else {
-      console.warn(`Invalid branch: ${branch}. Use 'plaza' or 'stopover'.`);
+      console.warn(`[BusinessContext] Invalid branch: "${branch}". Use 'plaza' or 'stopover'.`);
     }
   }, []);
 
-  // ===== TOAST NOTIFICATION SYSTEM (NEW - Milestone 1) =====
-
-  /**
-   * Show notification toast to user
-   * @param {string} message - Toast message to display
-   * @param {string} type - Toast type: 'success', 'info', 'error'
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // TOAST NOTIFICATION SYSTEM
+  // ───────────────────────────────────────────────────────────────────────────
   const showNotification = useCallback((message, type = "success") => {
-    setToast({
-      visible: true,
-      message,
-      type
-    });
+    setToast({ visible: true, message, type });
   }, []);
 
-  /**
-   * Auto-dismiss toast after 3 seconds (NEW - Milestone 1)
-   */
   useEffect(() => {
     if (toast.visible) {
-      const timer = setTimeout(() => {
-        setToast((prev) => ({ ...prev, visible: false }));
-      }, 3000);
+      const timer = setTimeout(
+        () => setToast((prev) => ({ ...prev, visible: false })),
+        3000
+      );
       return () => clearTimeout(timer);
     }
   }, [toast.visible]);
 
-  // ===== DATA ACCESS =====
-
-  /**
-   * Get the active branch data
-   * Returns the complete JSON structure for plaza or stopover
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // DATA ACCESS
+  // ───────────────────────────────────────────────────────────────────────────
   const getActiveBranchData = useCallback(() => {
     return activeBranch === "plaza" ? plazaData : stopoverData;
   }, [activeBranch]);
 
-  // ===== THEMING & STYLING =====
-
-  /**
-   * Get the active branch theme configuration
-   * Returns full palette of CSS variables for plaza or stopover
-   *
-   * Plaza Theme (Luxury/Safari):
-   *   - Primary: #8B4513 (Saddle Brown)
-   *   - Secondary: #D4AF37 (Gold)
-   *   - Accent: #E8DCC4 (Cream)
-   *   - Dark: #2C2416 (Dark Charcoal)
-   *   - Success: #2D5016 (Forest Green)
-   *   - Warning: #C9302C (Alert Red)
-   *   - Light: #F5F5DC (Beige)
-   *   - Font: Playfair Display (Luxury Serif)
-   *
-   * Stopover Theme (Professional/Service):
-   *   - Primary: #1F5A96 (Professional Blue)
-   *   - Secondary: #FF8C00 (Burnt Orange)
-   *   - Accent: #34495E (Slate Gray)
-   *   - Dark: #1A1A1A (Nearly Black)
-   *   - Success: #27AE60 (Vibrant Green)
-   *   - Warning: #E74C3C (Alert Red)
-   *   - Light: #ECF0F1 (Light Gray)
-   *   - Font: Inter (Modern Sans-serif)
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // THEMING & STYLING
+  // Note: colors here should stay in sync with AURA_CONFIG above.
+  // ───────────────────────────────────────────────────────────────────────────
   const getActiveBranchTheme = useCallback(() => {
     if (activeBranch === "plaza") {
       return {
-        // Branch Info
-        name: "Penuel Plaza",
-        type: "hotel",
-
-        // Color Palette
-        primary: "#8B4513", // Saddle brown (safari/earth tone)
-        secondary: "#D4AF37", // Gold (luxury accent)
-        accent: "#E8DCC4", // Cream (savanna)
-        dark: "#2C2416", // Dark charcoal
-        success: "#2D5016", // Forest green
-        warning: "#C9302C", // Alert red
-        light: "#F5F5DC", // Beige
-
-        // Typography
-        fontFamily: "'Playfair Display', serif" // Luxury serif
-      };
-    } else {
-      // Stopover theme
-      return {
-        // Branch Info
-        name: "Penuel Stopover",
-        type: "service-hub",
-
-        // Color Palette
-        primary: "#1F5A96", // Professional blue
-        secondary: "#FF8C00", // Burnt orange (energy)
-        accent: "#34495E", // Slate gray (efficiency)
-        dark: "#1A1A1A", // Nearly black
-        success: "#27AE60", // Vibrant green
-        warning: "#E74C3C", // Alert red
-        light: "#ECF0F1", // Light gray
-
-        // Typography
-        fontFamily: "'Inter', 'Segoe UI', sans-serif" // Modern sans-serif
+        name:       "Penuel Plaza",
+        type:       "hotel",
+        primary:    AURA_CONFIG.plaza.primaryColor,
+        secondary:  AURA_CONFIG.plaza.secondaryColor,
+        accent:     "#E8DCC4",
+        dark:       "#2C2416",
+        success:    "#2D5016",
+        warning:    "#C9302C",
+        light:      "#F5F5DC",
+        fontFamily: "'Playfair Display', serif",
       };
     }
+    return {
+      name:       "Penuel Stopover",
+      type:       "service-hub",
+      primary:    AURA_CONFIG.stopover.primaryColor,
+      secondary:  AURA_CONFIG.stopover.secondaryColor,
+      accent:     "#34495E",
+      dark:       "#1A1A1A",
+      success:    "#27AE60",
+      warning:    "#E74C3C",
+      light:      "#ECF0F1",
+      fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    };
   }, [activeBranch]);
 
-  // ===== BRANCH INFORMATION =====
-
-  /**
-   * Get branch-specific information from JSON data
-   * Returns: branch name, type, location, currency, and theme
-   * Ensures UI stays synced with data
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // BRANCH INFO
+  // ───────────────────────────────────────────────────────────────────────────
   const getBranchInfo = useCallback(() => {
-    const data = getActiveBranchData();
+    const data  = getActiveBranchData();
     const theme = getActiveBranchTheme();
-
     return {
-      branch: data.branch || "Unknown Branch",
-      type: data.type || "unknown",
+      branch:   data.branch   || "Unknown Branch",
+      type:     data.type     || "unknown",
       location: data.location || "Unknown Location",
       currency: data.currency || "KES",
-      theme: theme
+      theme,
     };
   }, [activeBranch, getActiveBranchData, getActiveBranchTheme]);
 
-  // ===== PAYMENT PROCESSING (MILESTONE 2) =====
-
-  /**
-   * Process Payment - Placeholder for Milestone 2
-   * Full M-Pesa, Pesapal, Stripe, IntaSend integration coming in Milestone 2
-   *
-   * @param {Object} paymentData - Payment details
-   * @param {number} paymentData.amount - Amount in KES
-   * @param {string} paymentData.currency - Currency code (default: KES)
-   * @param {string} paymentData.phone - Customer phone (format: 254xxxxxxxxx)
-   * @param {string} paymentData.description - Payment description/reference
-   * @param {string} paymentData.orderId - Unique order/transaction ID
-   * @param {string} paymentData.gateway - Payment gateway ('mpesa', 'pesapal', 'stripe', 'intasend')
-   * @returns {Promise<Object>} Transaction response
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // PAYMENT PROCESSING (Milestone 2 placeholder)
+  // ───────────────────────────────────────────────────────────────────────────
   const processPayment = useCallback(
     async (paymentData) => {
       const {
-        amount = 0,
-        currency = "KES",
-        phone = "",
+        amount      = 0,
+        currency    = "KES",
+        phone       = "",
         description = "Penuel Empire Payment",
-        orderId = "",
-        gateway = "mpesa"
+        orderId     = "",
+        gateway     = "mpesa",
       } = paymentData;
 
-      // Validate required fields
       if (!amount || amount <= 0) {
         setPaymentError("Invalid payment amount");
         setPaymentStatus("failed");
         showNotification("❌ Invalid payment amount", "error");
         return { success: false, error: "Invalid payment amount" };
       }
-
       if (!phone) {
         setPaymentError("Phone number is required");
         setPaymentStatus("failed");
         showNotification("❌ Phone number is required", "error");
         return { success: false, error: "Phone number is required" };
       }
-
       if (!orderId) {
         setPaymentError("Order ID is required");
         setPaymentStatus("failed");
@@ -235,197 +233,108 @@ export const BusinessProvider = ({ children }) => {
       try {
         setPaymentStatus("processing");
         setPaymentError(null);
-
-        // Log payment attempt
-        console.log("💳 Payment Processing:", {
-          amount,
-          currency,
-          phone,
-          description,
-          orderId,
-          gateway,
-          timestamp: new Date().toISOString(),
-          branch: activeBranch
-        });
-
-        // Show processing notification (Milestone 1)
         showNotification(`💳 Processing ${gateway.toUpperCase()} payment...`, "info");
 
-        // Placeholder: Simulate payment processing
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // M-Pesa config reference (for Milestone 2 implementation)
-        const mpesaConfig = {
-          consumerKey: import.meta.env.VITE_MPESA_CONSUMER_KEY || "NOT_SET",
-          consumerSecret: import.meta.env.VITE_MPESA_CONSUMER_SECRET || "NOT_SET",
-          shortCode: import.meta.env.VITE_MPESA_SHORTCODE || "NOT_SET",
-          passkey: import.meta.env.VITE_MPESA_PASSKEY || "NOT_SET",
-          callbackUrl: import.meta.env.VITE_MPESA_CALLBACK_URL || "NOT_SET"
-        };
+        // NOTE (Milestone 2): Never log real keys — remove this block when live.
+        if (import.meta.env.DEV) {
+          console.warn("[BusinessContext] M-Pesa integration not yet active.");
+        }
 
-        // Placeholder response
-        const placeholderResponse = {
-          success: false,
-          status: "pending",
-          message: "M-Pesa integration in Milestone 2. Please configure VITE_MPESA_* in .env.local",
+        showNotification("⏳ Payment processing (Milestone 2 pending)", "info");
+        setPaymentStatus("idle");
+
+        return {
+          success:       false,
+          status:        "pending",
+          message:       "M-Pesa integration pending Milestone 2.",
           transactionId: orderId,
           amount,
           currency,
           phone,
           gateway,
-          timestamp: new Date().toISOString(),
-          mpesaConfig
+          timestamp:     new Date().toISOString(),
         };
-
-        console.warn("⚠️ DEVELOPMENT MODE: M-Pesa integration not yet active.");
-        console.log("Expected M-Pesa Config:", mpesaConfig);
-
-        // Show pending notification (Milestone 1)
-        showNotification("⏳ Payment processing (Milestone 2 pending)", "info");
-
-        setPaymentStatus("idle");
-        return placeholderResponse;
       } catch (error) {
-        const errorMessage = error.message || "Payment processing failed";
-        setPaymentError(errorMessage);
+        const msg = error.message || "Payment processing failed";
+        setPaymentError(msg);
         setPaymentStatus("failed");
-        showNotification(`❌ ${errorMessage}`, "error");
-        console.error("Payment Error:", error);
-        return { success: false, error: errorMessage };
+        showNotification(`❌ ${msg}`, "error");
+        return { success: false, error: msg };
       }
     },
     [activeBranch, showNotification]
   );
 
-  // ===== CONTEXT VALUE (MEMOIZED) =====
-
-  /**
-   * Memoized context value to prevent unnecessary re-renders
-   * Includes all state, functions, and data needed by child components
-   */
+  // ───────────────────────────────────────────────────────────────────────────
+  // CONTEXT VALUE
+  // ───────────────────────────────────────────────────────────────────────────
   const contextValue = useMemo(
     () => ({
-      // ===== TOAST NOTIFICATIONS (NEW - Milestone 1) =====
-      toast,
-      showNotification,
-
-      // ===== BRANCH MANAGEMENT =====
-      activeBranch,
-      toggleBranch,
-
-      // ===== THEMING & DATA =====
-      getActiveBranchData,
-      getActiveBranchTheme,
-      getBranchInfo,
-
-      // ===== PAYMENT (Milestone 2) =====
-      paymentStatus,
-      paymentError,
-      processPayment,
-
-      // ===== DATA EXPORTS =====
-      plazaData,
-      stopoverData
-    }),
-    [
       // Toast
       toast,
       showNotification,
-
       // Branch
       activeBranch,
       toggleBranch,
-
       // Theme & Data
       getActiveBranchData,
       getActiveBranchTheme,
       getBranchInfo,
-
       // Payment
       paymentStatus,
       paymentError,
-      processPayment
+      processPayment,
+      // Raw data
+      plazaData,
+      stopoverData,
+    }),
+    [
+      toast, showNotification,
+      activeBranch, toggleBranch,
+      getActiveBranchData, getActiveBranchTheme, getBranchInfo,
+      paymentStatus, paymentError, processPayment,
     ]
   );
 
-  return <BusinessContext.Provider value={contextValue}>{children}</BusinessContext.Provider>;
+  return (
+    <BusinessContext.Provider value={contextValue}>
+      {children}
+    </BusinessContext.Provider>
+  );
 };
 
-// ===== CUSTOM HOOKS & UTILITIES =====
+// ─────────────────────────────────────────────────────────────────────────────
+// HOOKS
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Custom Hook: useBusinessContext
- * Access business context in any component
- *
- * @returns {Object} BusinessContext value
- *
- * Example Usage:
- * const { activeBranch, toggleBranch, showNotification } = useBusinessContext();
- */
 export const useBusinessContext = () => {
   const context = React.useContext(BusinessContext);
   if (!context) {
-    throw new Error("useBusinessContext must be used within BusinessProvider");
+    throw new Error("useBusinessContext must be used within a BusinessProvider.");
   }
   return context;
 };
 
-/**
- * Convenience Hook: useNotification
- * Access only the toast notification system
- *
- * Example Usage:
- * const { showNotification } = useNotification();
- * showNotification('Success!', 'success');
- */
 export const useNotification = () => {
   const { toast, showNotification } = useBusinessContext();
   return { toast, showNotification };
 };
 
-/**
- * Convenience Hook: useBranchState
- * Access only branch switching functionality
- *
- * Example Usage:
- * const { activeBranch, toggleBranch } = useBranchState();
- */
 export const useBranchState = () => {
   const { activeBranch, toggleBranch } = useBusinessContext();
   return { activeBranch, toggleBranch };
 };
 
-/**
- * Convenience Hook: useTheme
- * Access theming and styling information
- *
- * Example Usage:
- * const { theme, branchInfo } = useTheme();
- */
 export const useTheme = () => {
   const { getActiveBranchTheme, getBranchInfo } = useBusinessContext();
-  return {
-    theme: getActiveBranchTheme(),
-    branchInfo: getBranchInfo()
-  };
+  return { theme: getActiveBranchTheme(), branchInfo: getBranchInfo() };
 };
 
-/**
- * Convenience HOC: withBusinessContext
- * Wraps a component and injects business context as props
- *
- * Example Usage:
- * export default withBusinessContext(MyComponent);
- *
- * const MyComponent = ({ businessContext }) => {
- *   const { activeBranch, toggleBranch } = businessContext;
- * };
- */
-export const withBusinessContext = (WrappedComponent) => {
-  return (props) => {
-    const businessContext = useBusinessContext();
-    return <WrappedComponent {...props} businessContext={businessContext} />;
-  };
+export const withBusinessContext = (WrappedComponent) => (props) => {
+  const businessContext = useBusinessContext();
+  return <WrappedComponent {...props} businessContext={businessContext} />;
 };
 
 export default BusinessProvider;
