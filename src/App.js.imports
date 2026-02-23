@@ -1,7 +1,0 @@
-import React, { useEffect } from 'react';
-import { useBusinessContext } from './context/BusinessContext';
-import ServiceCard from './components/shared/ServiceCard';
-import './styles/App.css';
-
-// Rest of your App.js component code continues below...
-// (Keep all the existing App component logic and exports)
