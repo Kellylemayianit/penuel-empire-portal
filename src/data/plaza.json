@@ -3,122 +3,311 @@
   "theme": "Luxury Amboseli",
   "location": "Amboseli National Park Region",
   "currency": "KES",
+
   "rooms": [
     {
       "id": "room_001",
-      "type": "Safari View Standard",
+      "type": "Standard Double",
       "capacity": 2,
-      "rate_nightly": 120,
+      "rate_nightly": 12000,
+      "badge": null,
       "amenities": [
         "King-size bed",
         "Ensuite bathroom",
-        "Balcony with Kilimanjaro view",
+        "Garden or pool view",
         "Air conditioning",
-        "WiFi"
+        "WiFi",
+        "Daily housekeeping"
       ],
-      "description": "Comfortable entry-level accommodation with stunning mountain views"
+      "description": "Comfortable and well-appointed double room with garden or pool-facing views — the ideal base for your Amboseli adventure."
     },
     {
       "id": "room_002",
-      "type": "Amboseli Deluxe",
-      "capacity": 3,
-      "rate_nightly": 160,
+      "type": "Twin Room",
+      "capacity": 2,
+      "rate_nightly": 12000,
+      "badge": null,
       "amenities": [
-        "Twin beds + sofa bed",
-        "Premium ensuite",
-        "Large private balcony",
+        "Two single beds",
+        "Ensuite bathroom",
+        "Garden view",
+        "Air conditioning",
+        "WiFi",
+        "Daily housekeeping"
+      ],
+      "description": "Two premium single beds in a spacious layout — perfect for friends or colleagues travelling together."
+    },
+    {
+      "id": "room_003",
+      "type": "Triple Room",
+      "capacity": 3,
+      "rate_nightly": 16000,
+      "badge": null,
+      "amenities": [
+        "One double bed + one single bed",
+        "Ensuite bathroom",
+        "Balcony",
         "Air conditioning",
         "Smart TV",
         "Mini bar",
         "WiFi",
         "Daily housekeeping"
       ],
-      "description": "Upgraded accommodation with extended living space and premium services"
+      "description": "Versatile triple layout for families or small groups — extra space, enhanced amenities, and private balcony access."
     },
     {
-      "id": "room_003",
-      "type": "Elephant Suite Luxury",
-      "capacity": 4,
-      "rate_nightly": 200,
+      "id": "room_004",
+      "type": "Executive Suite",
+      "capacity": 2,
+      "rate_nightly": 28000,
+      "badge": "Best Seller",
       "amenities": [
-        "Master bedroom + lounge",
-        "Marble ensuite with jacuzzi",
+        "King-size bed",
+        "Separate lounge area",
+        "Floor-to-ceiling Kilimanjaro view",
+        "Marble ensuite with soaking tub",
         "Private terrace",
         "Air conditioning",
-        "Smart TV & entertainment system",
+        "65\" Smart TV & entertainment system",
         "Premium bar",
-        "Concierge service",
+        "Dedicated concierge",
         "WiFi",
         "Laundry service",
         "Breakfast included"
       ],
-      "description": "Premium suite with exclusive amenities and personalized concierge service"
+      "description": "Floor-to-ceiling Kilimanjaro views from an exclusive suite with marble finishes, private terrace, and a dedicated concierge — the pinnacle of Penuel Plaza luxury."
+    },
+    {
+      "id": "room_005",
+      "type": "Elephant Suite Luxury",
+      "capacity": 4,
+      "rate_nightly": 36000,
+      "badge": "Empire Elite",
+      "amenities": [
+        "Master bedroom + full lounge",
+        "Marble ensuite with jacuzzi",
+        "Two private terraces",
+        "Panoramic savanna view",
+        "Air conditioning",
+        "Smart TV & entertainment system",
+        "Premium bar",
+        "Personal butler",
+        "WiFi",
+        "Laundry service",
+        "Full board included"
+      ],
+      "description": "The crown jewel of Penuel Plaza — a palatial suite with two private terraces, personal butler, and sweeping views across the Amboseli savanna toward Kilimanjaro."
     }
   ],
+
+  "dining": {
+    "restaurants": [
+      {
+        "id": "dining_001",
+        "name": "Savanna Kitchen",
+        "cuisine": "Pan-African & International",
+        "service_hours": "06:00–23:00",
+        "seating_capacity": 120,
+        "description": "Our flagship open-air restaurant celebrating the flavours of East Africa alongside international classics.",
+        "menu": [
+          {
+            "id": "menu_001",
+            "name": "Nyama Choma Platter",
+            "category": "Grill",
+            "price": 1800,
+            "description": "Slow-charcoal-grilled beef ribs served with kachumbari, ugali, and roasted vegetable sides."
+          },
+          {
+            "id": "menu_002",
+            "name": "Amboseli Breakfast Spread",
+            "category": "Breakfast",
+            "price": 950,
+            "description": "Full continental and hot English breakfast with freshly squeezed Kenyan fruit juices."
+          },
+          {
+            "id": "menu_003",
+            "name": "Grilled Tilapia & Pilau",
+            "category": "Seafood",
+            "price": 1400,
+            "description": "Lake-fresh tilapia grilled to order, paired with spiced coastal pilau rice and green salad."
+          },
+          {
+            "id": "menu_004",
+            "name": "Vegetarian Safari Bowl",
+            "category": "Vegetarian",
+            "price": 850,
+            "description": "Seasonal African vegetables, lentil stew, and injera flatbread — vibrant, wholesome, and plant-forward."
+          }
+        ]
+      },
+      {
+        "id": "dining_002",
+        "name": "Kilimanjaro Bar & Lounge",
+        "cuisine": "Beverages & Light Bites",
+        "service_hours": "10:00–01:00",
+        "seating_capacity": 60,
+        "description": "A sophisticated sunset lounge with panoramic mountain views, craft cocktails, and curated small plates.",
+        "menu": [
+          {
+            "id": "menu_005",
+            "name": "African Sunset Cocktail",
+            "category": "Signature Cocktail",
+            "price": 650,
+            "description": "Passion fruit, mango, and Kenyan rum blend — our most photographed sunset drink."
+          },
+          {
+            "id": "menu_006",
+            "name": "Cheese & Charcuterie Board",
+            "category": "Light Bites",
+            "price": 1200,
+            "description": "Curated selection of artisan cheeses, cured meats, olives, and house-baked focaccia."
+          },
+          {
+            "id": "menu_007",
+            "name": "Premium Kenyan Coffee",
+            "category": "Hot Beverages",
+            "price": 250,
+            "description": "Single-origin AA-grade Kenyan beans, brewed to order by our trained baristas."
+          }
+        ]
+      }
+    ],
+
+    "room_service": {
+      "id": "rs_001",
+      "name": "In-Room Dining",
+      "availability": "24 hours",
+      "delivery_time_minutes": 30,
+      "surcharge_percent": 10,
+      "description": "Full restaurant menu available in the comfort of your room, around the clock.",
+      "menu": [
+        {
+          "id": "rs_menu_001",
+          "name": "Club Sandwich & Fries",
+          "category": "Snacks & Light Meals",
+          "price": 1100,
+          "description": "Triple-decker club sandwich with grilled chicken, bacon, fresh lettuce, and crispy golden fries."
+        },
+        {
+          "id": "rs_menu_002",
+          "name": "Late-Night Kenyan Comfort Bowl",
+          "category": "Mains",
+          "price": 900,
+          "description": "Ugali, sukuma wiki, and slow-cooked beef stew — Kenya's most comforting late-night plate."
+        },
+        {
+          "id": "rs_menu_003",
+          "name": "Fruit Platter & Yoghurt",
+          "category": "Healthy Options",
+          "price": 700,
+          "description": "Seasonal tropical fruit selection with Greek yoghurt and honey drizzle."
+        },
+        {
+          "id": "rs_menu_004",
+          "name": "Bottle of House Red / White Wine",
+          "category": "Beverages",
+          "price": 3500,
+          "description": "Curated selection of South African estate wines delivered to your room chilled or at room temperature."
+        }
+      ]
+    },
+
+    "event_catering": {
+      "id": "ec_001",
+      "name": "Penuel Plaza Event Catering",
+      "description": "Full-service catering for conferences, weddings, safari sundowners, and private celebrations.",
+      "packages": [
+        {
+          "id": "ec_pkg_001",
+          "name": "Safari Sundowner Package",
+          "price_per_person": 4500,
+          "min_guests": 10,
+          "max_guests": 80,
+          "description": "Outdoor bush-setting sunset cocktail event with canapés, open bar, and Maasai entertainment.",
+          "includes": ["Canapé selection", "Open bar (3 hrs)", "Event staff", "Maasai dancers", "Décor & lighting"]
+        },
+        {
+          "id": "ec_pkg_002",
+          "name": "Corporate Conference Buffet",
+          "price_per_person": 2800,
+          "min_guests": 20,
+          "max_guests": 200,
+          "description": "Full-day conference catering with morning tea, working lunch buffet, and afternoon refreshments.",
+          "includes": ["Morning tea & pastries", "Buffet lunch (3 courses)", "Afternoon tea", "AV support", "Dedicated event coordinator"]
+        },
+        {
+          "id": "ec_pkg_003",
+          "name": "Wedding Reception Package",
+          "price_per_person": 8500,
+          "min_guests": 30,
+          "max_guests": 150,
+          "description": "Premium plated wedding reception with bespoke menu design, floral décor, and dedicated wedding planner.",
+          "includes": ["Bespoke 4-course menu", "Wedding cake", "Floral centrepieces", "Wedding planner", "Premium bar (5 hrs)", "Photo backdrop setup"]
+        },
+        {
+          "id": "ec_pkg_004",
+          "name": "Private Dining Experience",
+          "price_per_person": 6000,
+          "min_guests": 2,
+          "max_guests": 12,
+          "description": "Exclusive private dining under the stars with a custom chef-designed menu and dedicated sommelier.",
+          "includes": ["Custom tasting menu (5 courses)", "Wine pairing", "Private chef", "Sommelier", "Starlit outdoor setup"]
+        }
+      ]
+    }
+  },
+
   "experiences": [
     {
       "id": "exp_001",
       "name": "Sunrise Safari Game Drive",
       "duration_hours": 3,
-      "price_per_person": 85,
-      "group_size": "1-6 persons",
-      "description": "Guided tour to spot African elephants, lions, giraffes, and zebras at dawn"
+      "price_per_person": 8500,
+      "group_size": "1–6 persons",
+      "description": "Guided dawn game drive to spot African elephants, lions, giraffes, and zebras in golden-hour light."
     },
     {
       "id": "exp_002",
       "name": "Maasai Cultural Village Visit",
       "duration_hours": 4,
-      "price_per_person": 75,
-      "group_size": "2-8 persons",
-      "description": "Immersive experience with local Maasai community, traditional crafts, and storytelling"
+      "price_per_person": 7500,
+      "group_size": "2–8 persons",
+      "description": "Immersive experience with the local Maasai community — traditional crafts, fire-making, and storytelling."
     },
     {
       "id": "exp_003",
-      "name": "Mount Kilimanjaro Viewing & Picnic",
+      "name": "Kilimanjaro Viewing & Gourmet Picnic",
       "duration_hours": 5,
-      "price_per_person": 95,
-      "group_size": "1-4 persons",
-      "description": "Premium vantage point with gourmet picnic lunch overlooking iconic peak"
+      "price_per_person": 9500,
+      "group_size": "1–4 persons",
+      "description": "Premium vantage-point picnic with a gourmet chef-curated basket overlooking Africa's iconic peak."
     },
     {
       "id": "exp_004",
       "name": "Spa & Wellness Retreat",
       "duration_hours": 2,
-      "price_per_person": 60,
-      "group_size": "1-2 persons",
-      "description": "In-resort massage, aromatherapy, and meditation overlooking the savanna"
+      "price_per_person": 6000,
+      "group_size": "1–2 persons",
+      "description": "In-resort massage, aromatherapy, and guided meditation overlooking the open savanna."
     }
   ],
-  "dining": [
-    {
-      "id": "dining_001",
-      "name": "Savanna Kitchen",
-      "cuisine": "Pan-African/International",
-      "service_hours": "06:00-23:00",
-      "capacity": 120,
-      "average_meal_price": 45
-    },
-    {
-      "id": "dining_002",
-      "name": "Kilimanjaro Bar & Lounge",
-      "cuisine": "Beverages/Light Bites",
-      "service_hours": "10:00-01:00",
-      "capacity": 60,
-      "average_drink_price": 12
-    }
-  ],
+
   "facilities": [
-    "Swimming pool",
-    "Fitness center",
-    "Business center",
-    "Conference halls",
-    "Outdoor amphitheater",
-    "Library with local history"
+    "Infinity swimming pool",
+    "Fully equipped fitness center",
+    "Business centre & boardroom",
+    "Conference halls (up to 200 pax)",
+    "Outdoor amphitheatre",
+    "Library with local history & curated reading",
+    "Children's activity zone",
+    "Curio & gift shop"
   ],
+
   "payment_methods": [
     "Cash KES",
     "M-Pesa",
     "International credit cards",
-    "Bank transfers"
+    "Bank transfers",
+    "USD / EUR accepted"
   ]
 }

@@ -4,93 +4,155 @@ import { ShieldCheck, Lock, User, AlertCircle } from 'lucide-react';
 import '../styles/Login.css';
 
 /**
- * Login.jsx - The Auth Gate / Entry Vault (Section 1)
- * 
- * Path: /gate
- * Philosophy: "High-End Entry Vault" - Minimal, Professional, Secure
- * 
- * Features:
- * - Glassmorphism card design (backdrop-filter: blur(40px))
- * - Deep Charcoal background with soft gradient glow
- * - Gold/Blue accent for button (uses --secondary-color)
- * - Large, elegant PENUEL branding above form
- * - Role-based authentication
- * - localStorage persistence
- * - Redirect to /dashboard on success
- * - Fade-in and slide-up animation (1.2s)
- * - Tech-empire footer: "Secure Server: Penuel-HQ-01"
- * 
- * Role Logic:
- * - owner@penuel.com → userRole: 'owner'
- * - secretary@penuel.com → userRole: 'secretary'
- * - Others → error message
+ * Login.jsx — Multi-Department Credential Version
+ *
+ * ARCHITECTURE:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Each entry in CREDENTIAL_MAP carries three fields:
+ *
+ *   password  — exact-match string (case-sensitive). No length-only bypass.
+ *   role      — 'owner' | 'staff'. Controls which routes ProtectedRoute grants
+ *               access to. Owner has master access. Staff access is scoped by
+ *               dept (enforced in ProtectedRoute via requiredDept).
+ *   dept      — 'executive' | 'carwash' | 'service' | 'restaurant' |
+ *               'supermarket'. Stored in localStorage as 'userDept'. Used by:
+ *                 • DashboardLayout  → passes dept to child pages as a prop
+ *                 • OperationsFeed   → filters task list to this dept only
+ *                 • Sidebar          → hides irrelevant nav items
+ *                 • ProtectedRoute   → dept-gated routes (requiredDept prop)
+ *
+ * REDIRECT LOGIC:
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   owner  → /dashboard          (full executive overview)
+ *   staff  → /dashboard/operations  (dept-filtered task feed, no overview)
+ *
+ * SECURITY NOTES (unchanged from previous version):
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   • Both unknown-email and wrong-password return the SAME error string.
+ *     This prevents user enumeration — an attacker cannot tell which field
+ *     was wrong.
+ *   • Credentials are still client-side. Acceptable for local/demo only.
+ *   • MILESTONE 2: Replace with POST /api/auth/login → JWT in HttpOnly cookie.
  */
 
-const VALID_CREDENTIALS = {
-  'owner@penuel.com': 'owner',
-  'secretary@penuel.com': 'secretary',
+// ─────────────────────────────────────────────────────────────────────────────
+// CREDENTIAL MAP
+// key    : normalised email (lowercase)
+// value  : { password, role, dept }
+//
+// To add a new department: add one entry here + define its route access in
+// ProtectedRoute.jsx and its task filter in OperationsFeed.jsx.
+// ─────────────────────────────────────────────────────────────────────────────
+const CREDENTIAL_MAP = {
+  'owner@penuel.com': {
+    password: 'PenuelOwner2026',
+    role:     'owner',
+    dept:     'executive',
+  },
+  'carwash@penuel.com': {
+    password: 'WashStaff2026',
+    role:     'staff',
+    dept:     'carwash',
+  },
+  'service@penuel.com': {
+    password: 'ServiceStaff2026',
+    role:     'staff',
+    dept:     'service',
+  },
+  'food@penuel.com': {
+    password: 'RestoStaff2026',
+    role:     'staff',
+    dept:     'restaurant',
+  },
+  'market@penuel.com': {
+    password: 'MarketStaff2026',
+    role:     'staff',
+    dept:     'supermarket',
+  },
 };
 
+// Shared by both failure branches — prevents enumeration.
+const AUTH_ERROR_MSG = 'Invalid credentials. Please check your email and password.';
+
+// Where each role lands after a successful login.
+const POST_LOGIN_ROUTE = {
+  owner: '/dashboard',
+  staff: '/dashboard/operations',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
+
+  /**
+   * handleLogin
+   *
+   * Step 1 — Email lookup (case-insensitive via normalisation at map-key level).
+   * Step 2 — Exact password match (case-sensitive).
+   * Step 3 — Write session data to localStorage:
+   *             'isAuthenticated' = 'true'
+   *             'userRole'        = entry.role   ('owner' | 'staff')
+   *             'userDept'        = entry.dept   ('executive' | 'carwash' | ...)
+   *             'userEmail'       = normalised email
+   * Step 4 — Navigate to the role-specific landing route.
+   */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simulate network delay
+    // Simulate async latency; swap for real fetch in Milestone 2.
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    // Validate email exists in our system
-    if (!VALID_CREDENTIALS[email]) {
-      setError('Invalid email. Please use owner@penuel.com or secretary@penuel.com');
+    const normalisedEmail = email.trim().toLowerCase();
+    const entry           = CREDENTIAL_MAP[normalisedEmail];
+
+    // Steps 1 & 2 — identical error message for both failure modes.
+    if (!entry || password !== entry.password) {
+      setError(AUTH_ERROR_MSG);
       setLoading(false);
       return;
     }
 
-    // Simple password validation (minimum 6 characters)
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
-
-    // Get user role
-    const userRole = VALID_CREDENTIALS[email];
-
-    // Store in localStorage
-    localStorage.setItem('userRole', userRole);
-    localStorage.setItem('userEmail', email);
+    // Step 3 — persist the minimum session payload.
+    // MILESTONE 2: replace with JWT in HttpOnly cookie + remove localStorage.
     localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userRole',        entry.role);
+    localStorage.setItem('userDept',        entry.dept);
+    localStorage.setItem('userEmail',       normalisedEmail);
 
-    console.log(`✨ Login successful: ${email} (${userRole})`);
+    if (import.meta.env.DEV) {
+      console.log(
+        `[Login] Auth success → role: ${entry.role} | dept: ${entry.dept}`
+      );
+    }
 
-    // Redirect to dashboard
-    navigate('/dashboard');
+    // Step 4 — role-differentiated redirect.
+    navigate(POST_LOGIN_ROUTE[entry.role] ?? '/dashboard');
     setLoading(false);
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="login-container">
-      {/* Soft gradient background glow */}
       <div className="login-background-glow"></div>
 
-      {/* Main login vault */}
       <div className="login-vault">
-        {/* Branding: Large PENUEL heading */}
         <div className="login-branding">
           <h1>PENUEL</h1>
           <p>Empire Gateway</p>
         </div>
 
-        {/* Login Card with glassmorphism */}
         <div className="login-card">
-          {/* Card Header */}
           <div className="login-header">
             <div className="login-icon">
               <ShieldCheck size={32} />
@@ -99,9 +161,9 @@ const Login = () => {
             <p className="login-subtitle">Secure entry for authorized personnel</p>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleLogin} className="login-form">
-            {/* Email Input */}
+
+            {/* ── Email ── */}
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
@@ -109,16 +171,17 @@ const Login = () => {
                 <input
                   id="email"
                   type="email"
-                  placeholder="owner@penuel.com"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
+                  autoComplete="email"
                   required
                 />
               </div>
             </div>
 
-            {/* Password Input */}
+            {/* ── Password ── */}
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className="input-wrapper">
@@ -130,20 +193,21 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
+                  autoComplete="current-password"
                   required
                 />
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* ── Error ── */}
             {error && (
-              <div className="error-message">
+              <div className="error-message" role="alert" aria-live="polite">
                 <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* ── Submit ── */}
             <button
               type="submit"
               className="login-button"
@@ -153,18 +217,22 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Card Footer */}
-          <div className="login-footer">
-            <p className="demo-note">
-              Demo Credentials:<br />
-              <code>owner@penuel.com</code> or <code>secretary@penuel.com</code><br />
-              Password: any 6+ characters
-            </p>
-          </div>
+          {/* DEV-ONLY credential cheatsheet — tree-shaken from production build */}
+          {import.meta.env.DEV && (
+            <div className="login-footer">
+              <p className="demo-note">
+                <strong>Dev credentials</strong><br />
+                <code>owner@penuel.com</code>   / <code>PenuelOwner2026</code>  — Owner (executive)<br />
+                <code>carwash@penuel.com</code>  / <code>WashStaff2026</code>   — Staff (carwash)<br />
+                <code>service@penuel.com</code>  / <code>ServiceStaff2026</code>— Staff (service)<br />
+                <code>food@penuel.com</code>     / <code>RestoStaff2026</code>  — Staff (restaurant)<br />
+                <code>market@penuel.com</code>   / <code>MarketStaff2026</code> — Staff (supermarket)
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tech-Empire Footer */}
       <div className="login-tech-footer">
         <code>Secure Server: Penuel-HQ-01</code>
       </div>

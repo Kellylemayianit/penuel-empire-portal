@@ -1,16 +1,17 @@
 /**
- * BusinessContext.jsx — Milestone 1 Refactor + Aura Sync Centralization
+ * BusinessContext.jsx — Triple-Aura Architecture
  *
- * AURA SYNC ARCHITECTURE (Post-Audit Fix):
- * ─────────────────────────────────────────
- * Single source of truth for ALL theme application.
- * One useEffect watches activeBranch and handles:
- *   1. document.body.classList  (CSS cascade via body.theme-* classes)
- *   2. document.documentElement CSS variables (instant color updates)
- *   3. localStorage persistence (survives page refresh)
+ * THREE-STATE AURA SYSTEM:
+ * ─────────────────────────────────────────────────────────────────────────────
+ *  'empire'   → Fiery Phoenix aesthetic (default) — the parent brand
+ *  'plaza'    → Midnight Aurum — luxury hotel
+ *  'stopover' → Neon Depths — highway service hub
+ * ─────────────────────────────────────────────────────────────────────────────
  *
- * No other component should touch body.classList or CSS variables
- * for theming purposes. Components only call toggleBranch().
+ * Single source of truth. One useEffect applies all DOM changes:
+ *   1. document.body.classList → 'theme-empire' | 'theme-plaza' | 'theme-stopover'
+ *   2. CSS variables on :root for smooth CSS-transition-based color changes
+ *   3. localStorage.setItem('penuel_branch', ...) for refresh persistence
  */
 
 import React, {
@@ -26,34 +27,55 @@ import stopoverData from "../data/stopover.json";
 export const BusinessContext = createContext();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AURA CONFIG — Single definition of all branch theme values.
-// Update colors here only; the useEffect below applies them everywhere.
+// TRIPLE AURA CONFIG
+// All design tokens live here. CSS + JS both derive from this single source.
 // ─────────────────────────────────────────────────────────────────────────────
-const AURA_CONFIG = {
+export const AURA_CONFIG = {
+  empire: {
+    bodyClass:       "theme-empire",
+    primaryColor:    "#1e1e1e",          // Phoenix Editor Deep Dark
+    secondaryColor:  "#ffae42",          // Bright Yellow-Orange (top of gradient)
+    accentColor:     "#ff4500",          // Red-Orange (bottom of gradient)
+    gradientStart:   "#ffae42",
+    gradientEnd:     "#ff4500",
+    textColor:       "#ffffff",
+    textMuted:       "#c0a080",
+    surfaceColor:    "#2a2a2a",
+  },
   plaza: {
     bodyClass:       "theme-plaza",
-    primaryColor:    "#0a0a0a",
-    secondaryColor:  "#d4af37",   // Gold
+    primaryColor:    "#1a1a1a",          // Midnight Black
+    secondaryColor:  "#d4af37",          // Luxury Gold
+    accentColor:     "#c9a026",          // Deep Gold
+    gradientStart:   "#d4af37",
+    gradientEnd:     "#c9a026",
+    textColor:       "#ffffff",
+    textMuted:       "#a0a0a0",
+    surfaceColor:    "#222222",
   },
   stopover: {
     bodyClass:       "theme-stopover",
-    primaryColor:    "#001f3f",   // Deep Navy
-    secondaryColor:  "#0074d9",   // Blue
+    primaryColor:    "#0a192f",          // Deep Industrial Navy
+    secondaryColor:  "#0074d9",          // Electric Blue
+    accentColor:     "#0056b3",          // Deep Blue
+    gradientStart:   "#0074d9",
+    gradientEnd:     "#00c6ff",
+    textColor:       "#e8f4fd",
+    textMuted:       "#7ab3d4",
+    surfaceColor:    "#112240",
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERSISTENCE KEY — used for localStorage read/write.
-// ─────────────────────────────────────────────────────────────────────────────
-const BRANCH_STORAGE_KEY = "activeBranch";
+const BRANCH_STORAGE_KEY = "penuel_branch";
+const VALID_BRANCHES = ["empire", "plaza", "stopover"];
 
 /**
- * Reads the last-saved branch from localStorage.
- * Falls back to 'plaza' if nothing is stored or the value is invalid.
+ * Reads last-saved branch from localStorage.
+ * Falls back to 'empire' (the parent brand) if nothing stored or invalid.
  */
 function getInitialBranch() {
   const stored = localStorage.getItem(BRANCH_STORAGE_KEY);
-  return stored === "plaza" || stored === "stopover" ? stored : "plaza";
+  return VALID_BRANCHES.includes(stored) ? stored : "empire";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,7 +83,6 @@ function getInitialBranch() {
 // ─────────────────────────────────────────────────────────────────────────────
 export const BusinessProvider = ({ children }) => {
 
-  // Initialize from localStorage so the theme is correct on first render/refresh.
   const [activeBranch, setActiveBranch] = useState(getInitialBranch);
 
   const [toast, setToast] = useState({
@@ -71,63 +92,63 @@ export const BusinessProvider = ({ children }) => {
   });
 
   const [paymentStatus, setPaymentStatus] = useState("idle");
-  const [paymentError, setPaymentError] = useState(null);
+  const [paymentError, setPaymentError]   = useState(null);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // AURA SYNC — THE ONE PLACE WHERE THEME IS APPLIED TO THE DOM.
+  // ─────────────────────────────────────────────────────────────────────────
+  // AURA SYNC — THE SINGLE SOURCE OF DOM THEME APPLICATION
   //
-  // Runs on mount (applying the persisted or default theme immediately)
-  // and every time activeBranch changes (applying the new theme instantly).
-  //
-  // Responsibilities:
-  //   • Swap body class (enables CSS rules like body.theme-stopover .x { })
-  //   • Set --primary-color and --secondary-color on :root
-  //   • Persist the chosen branch to localStorage
-  // ───────────────────────────────────────────────────────────────────────────
+  // Fires on mount (restoring persisted branch) and on every branch switch.
+  // CSS custom properties animate via transition rules defined in App.css.
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const config = AURA_CONFIG[activeBranch];
     if (!config) return;
 
-    // 1. Body class — remove all known theme classes, add the current one.
+    // 1. Body class — swap to the correct theme class
     const allBodyClasses = Object.values(AURA_CONFIG).map((c) => c.bodyClass);
     document.body.classList.remove(...allBodyClasses);
     document.body.classList.add(config.bodyClass);
 
-    // 2. CSS variables on :root for instant color cascading.
+    // 2. CSS variables — applied to :root, animated by CSS transitions
     const root = document.documentElement;
-    root.style.setProperty("--primary-color",   config.primaryColor);
-    root.style.setProperty("--secondary-color", config.secondaryColor);
+    root.style.setProperty("--primary-color",    config.primaryColor);
+    root.style.setProperty("--secondary-color",  config.secondaryColor);
+    root.style.setProperty("--accent-color",     config.accentColor);
+    root.style.setProperty("--gradient-start",   config.gradientStart);
+    root.style.setProperty("--gradient-end",     config.gradientEnd);
+    root.style.setProperty("--text-color",       config.textColor);
+    root.style.setProperty("--text-muted",       config.textMuted);
+    root.style.setProperty("--surface-color",    config.surfaceColor);
 
-    // 3. Persist to localStorage so refresh restores the correct theme.
+    // 3. Persist branch selection
     localStorage.setItem(BRANCH_STORAGE_KEY, activeBranch);
 
-    // 4. Development log — remove or guard with import.meta.env.DEV in production.
     if (import.meta.env.DEV) {
-      console.log(
-        `[AuraSync] Branch: ${activeBranch} | ` +
-        `Primary: ${config.primaryColor} | ` +
-        `Secondary: ${config.secondaryColor}`
-      );
+      console.log(`[AuraSync] ✦ Branch: ${activeBranch} → ${config.bodyClass}`);
     }
   }, [activeBranch]);
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // BRANCH MANAGEMENT
-  // ───────────────────────────────────────────────────────────────────────────
+  // Now handles three valid states: 'empire', 'plaza', 'stopover'
+  // ─────────────────────────────────────────────────────────────────────────
   const toggleBranch = useCallback((branch) => {
-    if (branch === "plaza" || branch === "stopover") {
+    if (VALID_BRANCHES.includes(branch)) {
       setActiveBranch(branch);
       setPaymentStatus("idle");
       setPaymentError(null);
       setToast((prev) => ({ ...prev, visible: false }));
     } else {
-      console.warn(`[BusinessContext] Invalid branch: "${branch}". Use 'plaza' or 'stopover'.`);
+      console.warn(
+        `[BusinessContext] Invalid branch: "${branch}". ` +
+        `Use one of: ${VALID_BRANCHES.join(", ")}.`
+      );
     }
   }, []);
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // TOAST NOTIFICATION SYSTEM
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   const showNotification = useCallback((message, type = "success") => {
     setToast({ visible: true, message, type });
   }, []);
@@ -142,64 +163,64 @@ export const BusinessProvider = ({ children }) => {
     }
   }, [toast.visible]);
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // DATA ACCESS
-  // ───────────────────────────────────────────────────────────────────────────
+  // Empire state falls back to plaza data as the "parent" data set.
+  // ─────────────────────────────────────────────────────────────────────────
   const getActiveBranchData = useCallback(() => {
-    return activeBranch === "plaza" ? plazaData : stopoverData;
+    if (activeBranch === "stopover") return stopoverData;
+    return plazaData; // empire and plaza both use plaza data
   }, [activeBranch]);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // THEMING & STYLING
-  // Note: colors here should stay in sync with AURA_CONFIG above.
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // THEMING
+  // ─────────────────────────────────────────────────────────────────────────
   const getActiveBranchTheme = useCallback(() => {
-    if (activeBranch === "plaza") {
-      return {
+    const config = AURA_CONFIG[activeBranch];
+    const base = {
+      empire: {
+        name:       "Penuel Empire",
+        type:       "holding-company",
+        fontFamily: "'Georgia', serif",
+      },
+      plaza: {
         name:       "Penuel Plaza",
         type:       "hotel",
-        primary:    AURA_CONFIG.plaza.primaryColor,
-        secondary:  AURA_CONFIG.plaza.secondaryColor,
-        accent:     "#E8DCC4",
-        dark:       "#2C2416",
-        success:    "#2D5016",
-        warning:    "#C9302C",
-        light:      "#F5F5DC",
-        fontFamily: "'Playfair Display', serif",
-      };
-    }
+        fontFamily: "'Georgia', serif",
+      },
+      stopover: {
+        name:       "Penuel Stopover",
+        type:       "service-hub",
+        fontFamily: "'Georgia', serif",
+      },
+    }[activeBranch];
+
     return {
-      name:       "Penuel Stopover",
-      type:       "service-hub",
-      primary:    AURA_CONFIG.stopover.primaryColor,
-      secondary:  AURA_CONFIG.stopover.secondaryColor,
-      accent:     "#34495E",
-      dark:       "#1A1A1A",
-      success:    "#27AE60",
-      warning:    "#E74C3C",
-      light:      "#ECF0F1",
-      fontFamily: "'Inter', 'Segoe UI', sans-serif",
+      ...base,
+      primary:    config.primaryColor,
+      secondary:  config.secondaryColor,
+      accent:     config.accentColor,
     };
   }, [activeBranch]);
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // BRANCH INFO
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   const getBranchInfo = useCallback(() => {
     const data  = getActiveBranchData();
     const theme = getActiveBranchTheme();
     return {
-      branch:   data.branch   || "Unknown Branch",
-      type:     data.type     || "unknown",
-      location: data.location || "Unknown Location",
+      branch:   activeBranch === "empire" ? "Penuel Empire" : (data.branch || "Unknown"),
+      type:     activeBranch === "empire" ? "holding-company" : (data.type || "unknown"),
+      location: activeBranch === "empire" ? "East Africa" : (data.location || "Unknown"),
       currency: data.currency || "KES",
       theme,
     };
   }, [activeBranch, getActiveBranchData, getActiveBranchTheme]);
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // PAYMENT PROCESSING (Milestone 2 placeholder)
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   const processPayment = useCallback(
     async (paymentData) => {
       const {
@@ -234,27 +255,17 @@ export const BusinessProvider = ({ children }) => {
         setPaymentStatus("processing");
         setPaymentError(null);
         showNotification(`💳 Processing ${gateway.toUpperCase()} payment...`, "info");
-
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // NOTE (Milestone 2): Never log real keys — remove this block when live.
+        await new Promise((r) => setTimeout(r, 2000));
         if (import.meta.env.DEV) {
           console.warn("[BusinessContext] M-Pesa integration not yet active.");
         }
-
         showNotification("⏳ Payment processing (Milestone 2 pending)", "info");
         setPaymentStatus("idle");
-
         return {
-          success:       false,
-          status:        "pending",
-          message:       "M-Pesa integration pending Milestone 2.",
-          transactionId: orderId,
-          amount,
-          currency,
-          phone,
-          gateway,
-          timestamp:     new Date().toISOString(),
+          success: false, status: "pending",
+          message: "M-Pesa integration pending Milestone 2.",
+          transactionId: orderId, amount, currency, phone, gateway,
+          timestamp: new Date().toISOString(),
         };
       } catch (error) {
         const msg = error.message || "Payment processing failed";
@@ -267,28 +278,18 @@ export const BusinessProvider = ({ children }) => {
     [activeBranch, showNotification]
   );
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   // CONTEXT VALUE
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   const contextValue = useMemo(
     () => ({
-      // Toast
-      toast,
-      showNotification,
-      // Branch
-      activeBranch,
-      toggleBranch,
-      // Theme & Data
-      getActiveBranchData,
-      getActiveBranchTheme,
-      getBranchInfo,
-      // Payment
-      paymentStatus,
-      paymentError,
-      processPayment,
-      // Raw data
-      plazaData,
-      stopoverData,
+      toast, showNotification,
+      activeBranch, toggleBranch,
+      getActiveBranchData, getActiveBranchTheme, getBranchInfo,
+      paymentStatus, paymentError, processPayment,
+      plazaData, stopoverData,
+      // Expose config for components that need to derive colors
+      auraConfig: AURA_CONFIG,
     }),
     [
       toast, showNotification,
@@ -317,7 +318,7 @@ export const useBusinessContext = () => {
   return context;
 };
 
-export const useNotification = () => {
+export const useNotification  = () => {
   const { toast, showNotification } = useBusinessContext();
   return { toast, showNotification };
 };

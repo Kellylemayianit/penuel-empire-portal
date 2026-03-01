@@ -1329,3 +1329,116 @@ body.theme-stopover .switcher-slider {
     transition: none !important;
   }
 }
+
+
+
+
+/* ============================================================================
+   DASHBOARD.CSS — PATCH v2
+   Append to the bottom of your existing Dashboard.css.
+
+   Contains:
+     1. .dept-label  — department sub-line in the role badge
+     2. Dept-specific --dept-accent CSS variables
+        Used by any component inside .dashboard-main.<dept> that wants the
+        department's signature colour without extra prop drilling.
+   ============================================================================ */
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROLE BADGE — DEPT SUB-LINE
+   .sidebar-role-badge already provides the container, border, and padding.
+   .role-label renders the role string (e.g. "STAFF") on the first line.
+   .dept-label renders the dept name on a second line, visually subordinate.
+───────────────────────────────────────────────────────────────────────────── */
+
+.sidebar-role-badge {
+  /* Override: flex-column so role and dept stack vertically */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dept-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+
+  /* Subtle separator between role and dept */
+  padding-top: 0.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  text-align: center;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DEPT ACCENT VARIABLES
+   Scoped to .dashboard-main.<dept> — so overrides only apply inside the main
+   content area for that department. The sidebar, header, and other chrome are
+   unaffected.
+
+   Usage in any child component:
+     color: var(--dept-accent);
+     border-color: var(--dept-accent);
+     background: rgba(var(--dept-accent-rgb), 0.08);   ← if RGB version needed
+
+   Owner (executive) maps to the default gold so the owner dashboard looks
+   identical to before — no visual surprise on the owner side.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Car Wash — steel blue */
+.dashboard-main.carwash {
+  --dept-accent:     #4a9eca;
+  --dept-accent-rgb: 74, 158, 202;
+}
+
+/* Service Bay — amber */
+.dashboard-main.service {
+  --dept-accent:     #ff9800;
+  --dept-accent-rgb: 255, 152, 0;
+}
+
+/* Restaurant — green */
+.dashboard-main.restaurant {
+  --dept-accent:     #4caf50;
+  --dept-accent-rgb: 76, 175, 80;
+}
+
+/* Supermarket — teal */
+.dashboard-main.supermarket {
+  --dept-accent:     #00bcd4;
+  --dept-accent-rgb: 0, 188, 212;
+}
+
+/* Executive / Owner — default gold (matches global --secondary-color) */
+.dashboard-main.executive {
+  --dept-accent:     var(--secondary-color);
+  --dept-accent-rgb: 212, 175, 55;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DEPT PAGE HEADER ACCENT
+   When a staff member is on their dept workspace, the page header underline
+   uses the dept accent colour instead of the global gold/blue.
+   The selector is specific enough to not affect the owner dashboard.
+───────────────────────────────────────────────────────────────────────────── */
+
+.dashboard-main.carwash     .dashboard-page-header,
+.dashboard-main.service     .dashboard-page-header,
+.dashboard-main.restaurant  .dashboard-page-header,
+.dashboard-main.supermarket .dashboard-page-header {
+  border-bottom-color: var(--dept-accent);
+}
+
+/* Dept-accented dashboard cards — opt-in via .dept-card class */
+.dashboard-main .dept-card {
+  border-color: var(--dept-accent, var(--secondary-color));
+}
+
+.dashboard-main .dept-card:hover {
+  box-shadow: 0 8px 24px rgba(var(--dept-accent-rgb, 212, 175, 55), 0.15);
+}
