@@ -1,85 +1,73 @@
 /**
- * App.jsx — Multi-Department Route Architecture (v3)
- *
- * CHANGES FROM v2:
+ * App.jsx — Penuel Empire · Global App Shell (v4)
  * ─────────────────────────────────────────────────────────────────────────────
- * 1. SESSION READS:
- *      userRole and userDept are read from localStorage once at the App level
- *      and threaded as props into DashboardLayout on every route that needs
- *      them. This means any page nested inside DashboardLayout always knows
- *      the current user's full identity without re-reading localStorage itself.
  *
- * 2. DashboardLayout RECEIVES userDept:
- *      DashboardLayout now accepts a `userDept` prop alongside `userRole`.
- *      It should forward that value to:
- *        • Sidebar    — to show only the nav items relevant to the dept
- *        • Page pages — so OperationsFeed can filter its task list by dept
+ * CHANGES FROM v3:
  *
- * 3. PROTECTED ROUTE TIERS (using ProtectedRoute v2):
+ * 1. BusinessProvider now wraps the entire tree
+ *    AppShell (inner component) can call useBusinessContext() freely because
+ *    it renders inside <BusinessProvider>. Every page and component in the
+ *    tree shares the same context instance — no prop drilling needed.
  *
- *      TIER 0 — Unauthenticated:
- *        DashboardLayout's own useEffect already handles the isAuthenticated
- *        check and redirects to /gate. ProtectedRoute layers on TOP of that.
+ * 2. Global Aura Controller (FloatingSwitcher) lives here
+ *    Removed from Catalogue.jsx. Rendered once, outside <Routes>, so it
+ *    persists across every page transition.
+ *    - Desktop  → vertically-centred pill fixed to the right edge
+ *    - Mobile   → full-width bottom bar, safe-area-inset-bottom aware
+ *    - Appears after user scrolls 100px (scroll sentinel)
+ *    - All .floater styles live in App.css (§ FLOATER)
  *
- *      TIER 1 — Owner-only routes (financials, settings, aura):
- *        <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
- *        Staff of any dept who navigate here are sent to /dashboard/operations
- *        (their natural landing page) instead of /dashboard, which is the
- *        owner overview they shouldn't see either.
+ * 3. Phoenix Glass Navbar replaces the external <Navbar> import
+ *    Inlined here so it can read activeBranch directly from context and
+ *    sync aura colours to active links without any prop threading.
+ *    - Glass backdrop: blur(20px) saturate(180%)
+ *    - Hamburger opens full-screen glass overlay on mobile
+ *    - Active link colour changes per branch (orange / gold / electric-blue)
+ *    - In-menu branch switcher for one-tap switching without closing menu
  *
- *      TIER 2 — Any authenticated staff (operations, staff management):
- *        <ProtectedRoute requiredRole="staff">
- *        Owner passes automatically via the master-key bypass in ProtectedRoute.
- *        Unauthenticated users never reach this — DashboardLayout gates first.
+ * 4. Navbar import removed — the external component is now dead code;
+ *    keep the file but stop importing it so there's no double-render.
  *
- *      TIER 3 — Dept-scoped routes (one per department):
- *        <ProtectedRoute requiredRole="staff" requiredDept="carwash">
- *        Only the matching dept (+ owner) can enter.  Other staff are
- *        redirected to /dashboard/operations.
- *
- * 4. /dashboard ITSELF (owner overview) is now wrapped with:
- *        <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
- *      so staff who navigate to "/" or "/" programmatically land correctly.
- *
- * SECURITY NOTE:
- * ─────────────────────────────────────────────────────────────────────────────
- * All route guards are UI-layer only. Milestone 2 must enforce the same rules
- * server-side via JWT claims on every API call.
+ * SECURITY NOTE (unchanged):
+ *   All route guards are UI-layer only.  Enforce server-side via JWT claims.
  */
 
-import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, useLocation, NavLink } from 'react-router-dom';
 
-import Navbar          from './components/Navbar';
-import DashboardLayout from './components/DashboardLayout';
+import { BusinessProvider, useBusinessContext } from './context/BusinessContext';
 import ProtectedRoute  from './components/ProtectedRoute';
+import DashboardLayout from './components/DashboardLayout';
 import DashboardHome   from './pages/DashboardHome';
 import Home            from './pages/Home';
 import About           from './pages/About';
 import Catalogue       from './pages/Catalogue';
 import Login           from './pages/Login';
+import { Flame, Globe, Zap, Menu, X, ChevronRight } from 'lucide-react';
 
+import './styles/App.css';
 import './styles/Dashboard.css';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 const NAVBAR_HIDDEN_PREFIXES = ['/gate', '/dashboard'];
 
+const NAV_LINKS = [
+  { to: '/',          label: 'Home'     },
+  { to: '/about',     label: 'About'    },
+  { to: '/catalogue', label: 'Services' },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
-// SESSION HELPER
-// Read userRole and userDept once at App level so every route can pass them
-// as props. Normalised to lowercase to match ProtectedRoute comparisons.
+// SESSION HELPER (unchanged from v3)
 // ─────────────────────────────────────────────────────────────────────────────
 const getSession = () => ({
   userRole: (localStorage.getItem('userRole') || '').toLowerCase(),
   userDept: (localStorage.getItem('userDept') || '').toLowerCase(),
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LAYOUT FACTORY
-// Returns a DashboardLayout with userRole and userDept already threaded in,
-// wrapping whatever page content is passed as `children`.
-// Using a factory keeps the route JSX readable and avoids repeating the
-// localStorage reads on every route definition.
-// ─────────────────────────────────────────────────────────────────────────────
 const Layout = ({ children }) => {
   const { userRole, userDept } = getSession();
   return (
@@ -90,61 +78,213 @@ const Layout = ({ children }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// APP
+// GLOBAL AURA CONTROLLER
 // ─────────────────────────────────────────────────────────────────────────────
-const App = () => {
+const FloatingSwitcher = () => {
+  const { activeBranch, toggleBranch } = useBusinessContext();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 100);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const BTNS = [
+    { key: 'empire',   Icon: Flame, label: 'Empire'   },
+    { key: 'plaza',    Icon: Globe, label: 'Plaza'    },
+    { key: 'stopover', Icon: Zap,   label: 'Stopover' },
+  ];
+
+  return (
+    <nav
+      className={`floater${visible ? ' floater--visible' : ''}`}
+      aria-label="Global branch switcher"
+    >
+      {BTNS.map(({ key, Icon, label }) => (
+        <button
+          key={key}
+          className={`floater__btn floater__btn--${key}${activeBranch === key ? ' is-active' : ''}`}
+          onClick={() => toggleBranch(key)}
+          aria-pressed={activeBranch === key}
+          title={label}
+        >
+          <Icon size={18} aria-hidden="true" />
+          <span className="floater__label">{label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHOENIX GLASS NAVBAR
+//
+// Reads activeBranch from context — no props needed.
+// Desktop: sticky bar with horizontal links.
+// Mobile:  hamburger → full-screen blurred glass overlay with staggered links.
+// Aura-sync: .navbar--{branch} drives active-link colour via CSS.
+// ─────────────────────────────────────────────────────────────────────────────
+const Navbar = () => {
+  const { activeBranch, toggleBranch } = useBusinessContext();
+  const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
-  const shouldShowNavbar = !NAVBAR_HIDDEN_PREFIXES.some((prefix) =>
-    location.pathname.startsWith(prefix)
+  // Close on route change
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  // Lock body scroll while overlay is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const brandIcon =
+    activeBranch === 'stopover' ? '⛽' :
+    activeBranch === 'plaza'    ? '🏨' : '🔥';
+
+  return (
+    <header className={`navbar navbar--${activeBranch}`} role="banner">
+      <div className="navbar__inner">
+
+        {/* ── Wordmark ── */}
+        <NavLink to="/" className="navbar__brand" aria-label="Penuel Empire — home">
+          <span className="navbar__brand-icon" aria-hidden="true">{brandIcon}</span>
+          <span className="navbar__brand-text">
+            Penuel <em>Empire</em>
+          </span>
+        </NavLink>
+
+        {/* ── Desktop links ── */}
+        <nav className="navbar__links" aria-label="Primary navigation">
+          {NAV_LINKS.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                `navbar__link${isActive ? ' navbar__link--active' : ''}`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+          <NavLink to="/gate" className="navbar__cta">
+            Staff Login <ChevronRight size={13} aria-hidden="true" />
+          </NavLink>
+        </nav>
+
+        {/* ── Hamburger ── */}
+        <button
+          className={`navbar__burger${menuOpen ? ' is-open' : ''}`}
+          onClick={() => setMenuOpen(v => !v)}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </div>
+
+      {/* ── Phoenix Glass Overlay ── */}
+      <div
+        id="mobile-menu"
+        className={`mobile-menu${menuOpen ? ' mobile-menu--open' : ''}`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="mobile-menu__noise" aria-hidden="true" />
+
+        <nav className="mobile-menu__nav" aria-label="Mobile navigation">
+          {NAV_LINKS.map(({ to, label }, i) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              style={{ '--i': i }}
+              className={({ isActive }) =>
+                `mobile-menu__link${isActive ? ' mobile-menu__link--active' : ''}`
+              }
+            >
+              <span>{label}</span>
+              <ChevronRight size={16} className="mobile-menu__chevron" aria-hidden="true" />
+            </NavLink>
+          ))}
+          <NavLink
+            to="/gate"
+            className="mobile-menu__cta"
+            style={{ '--i': NAV_LINKS.length }}
+          >
+            Staff Login
+          </NavLink>
+        </nav>
+
+        {/* Branch switcher inside overlay — convenience shortcut */}
+        <div className="mobile-menu__switcher">
+          {[
+            { key: 'empire',   Icon: Flame, label: 'Empire'   },
+            { key: 'plaza',    Icon: Globe, label: 'Plaza'    },
+            { key: 'stopover', Icon: Zap,   label: 'Stopover' },
+          ].map(({ key, Icon, label }) => (
+            <button
+              key={key}
+              className={`mob-sw-btn mob-sw-btn--${key}${activeBranch === key ? ' is-active' : ''}`}
+              onClick={() => { toggleBranch(key); setMenuOpen(false); }}
+              aria-pressed={activeBranch === key}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <p className="mobile-menu__tagline">One Empire · Two Worlds</p>
+      </div>
+    </header>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP SHELL — inner component, safe to call useBusinessContext()
+// ─────────────────────────────────────────────────────────────────────────────
+const AppShell = () => {
+  const location = useLocation();
+  const shouldShowNavbar = !NAVBAR_HIDDEN_PREFIXES.some(p =>
+    location.pathname.startsWith(p)
   );
 
   return (
     <div className="app">
       {shouldShowNavbar && <Navbar />}
 
+      {/* Global Aura Controller — outside Routes, visible on every page */}
+      <FloatingSwitcher />
+
       <Routes>
 
         {/* ═══════════════════════════════════════════════════════════════
             PUBLIC ROUTES
-            No auth required.
         ═══════════════════════════════════════════════════════════════ */}
         <Route path="/"          element={<Home />} />
         <Route path="/about"     element={<About />} />
         <Route path="/catalogue" element={<Catalogue />} />
         <Route path="/gate"      element={<Login />} />
 
-
         {/* ═══════════════════════════════════════════════════════════════
-            TIER 1 — OWNER-ONLY ROUTES
-            requiredRole="owner"   → master key in ProtectedRoute passes owner.
-            redirectTo="/dashboard/operations" → staff land on their own page,
-            not the owner overview, if they try to access these URLs directly.
+            TIER 1 — OWNER-ONLY
         ═══════════════════════════════════════════════════════════════ */}
-
-        {/* Executive overview — owner only */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute
-              requiredRole="owner"
-              redirectTo="/dashboard/operations"
-            >
-              <Layout>
-                <DashboardHome />
-              </Layout>
+            <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
+              <Layout><DashboardHome /></Layout>
             </ProtectedRoute>
           }
         />
-
-        {/* Financial reports — owner only */}
         <Route
           path="/dashboard/financials"
           element={
-            <ProtectedRoute
-              requiredRole="owner"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -162,15 +302,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Global settings — owner only */}
         <Route
           path="/dashboard/settings"
           element={
-            <ProtectedRoute
-              requiredRole="owner"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -188,15 +323,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Aura analytics — owner only */}
         <Route
           path="/dashboard/aura"
           element={
-            <ProtectedRoute
-              requiredRole="owner"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="owner" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -215,24 +345,13 @@ const App = () => {
           }
         />
 
-
         {/* ═══════════════════════════════════════════════════════════════
-            TIER 2 — ANY AUTHENTICATED STAFF (+ owner via master key)
-            requiredRole="staff"   No dept restriction — all staff enter.
-            redirectTo="/gate"     Unauthenticated users bounce to login.
-            Note: DashboardLayout's own auth guard fires first, but keeping
-            the redirectTo="/gate" here provides a belt-and-suspenders
-            fallback in case DashboardLayout changes in future.
+            TIER 2 — ANY AUTHENTICATED STAFF
         ═══════════════════════════════════════════════════════════════ */}
-
-        {/* Operations feed — staff landing page, dept-filtered inside the page */}
         <Route
           path="/dashboard/operations"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              redirectTo="/gate"
-            >
+            <ProtectedRoute requiredRole="staff" redirectTo="/gate">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -243,26 +362,17 @@ const App = () => {
                 <div className="dashboard-content">
                   <div className="dashboard-card">
                     <h3>Operations Dashboard</h3>
-                    <p>
-                      Placeholder — import OperationsFeed here. It receives
-                      <code> userDept</code> from DashboardLayout and filters
-                      tasks to the current department automatically.
-                    </p>
+                    <p>Placeholder — import OperationsFeed here.</p>
                   </div>
                 </div>
               </Layout>
             </ProtectedRoute>
           }
         />
-
-        {/* Staff management — available to all staff (owner manages via this too) */}
         <Route
           path="/dashboard/staff"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              redirectTo="/gate"
-            >
+            <ProtectedRoute requiredRole="staff" redirectTo="/gate">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -281,27 +391,13 @@ const App = () => {
           }
         />
 
-
         {/* ═══════════════════════════════════════════════════════════════
-            TIER 3 — DEPT-SCOPED ROUTES
-            requiredRole="staff" + requiredDept="<dept>"
-            Only the matching department staff (and owner) can enter.
-            All other staff are sent back to /dashboard/operations.
-
-            These routes give each department a dedicated space for
-            deep-dive tools (e.g. wash queue management, bay scheduling,
-            menu editing, stock control) without cross-dept visibility.
+            TIER 3 — DEPT-SCOPED
         ═══════════════════════════════════════════════════════════════ */}
-
-        {/* Car Wash department workspace */}
         <Route
           path="/dashboard/dept/carwash"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              requiredDept="carwash"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="staff" requiredDept="carwash" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -319,16 +415,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Service Bay department workspace */}
         <Route
           path="/dashboard/dept/service"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              requiredDept="service"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="staff" requiredDept="service" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -346,16 +436,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Restaurant department workspace */}
         <Route
           path="/dashboard/dept/restaurant"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              requiredDept="restaurant"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="staff" requiredDept="restaurant" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -373,16 +457,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Supermarket department workspace */}
         <Route
           path="/dashboard/dept/supermarket"
           element={
-            <ProtectedRoute
-              requiredRole="staff"
-              requiredDept="supermarket"
-              redirectTo="/dashboard/operations"
-            >
+            <ProtectedRoute requiredRole="staff" requiredDept="supermarket" redirectTo="/dashboard/operations">
               <Layout>
                 <div className="dashboard-page-header">
                   <div className="dashboard-page-title">
@@ -401,19 +479,13 @@ const App = () => {
           }
         />
 
-
         {/* ═══════════════════════════════════════════════════════════════
             404 CATCH-ALL
         ═══════════════════════════════════════════════════════════════ */}
         <Route
           path="*"
           element={
-            <div style={{
-              textAlign:  'center',
-              padding:    '4rem 2rem',
-              color:      'white',
-              minHeight:  '100vh',
-            }}>
+            <div style={{ textAlign:'center', padding:'4rem 2rem', color:'white', minHeight:'100vh' }}>
               <h1>404 — Page Not Found</h1>
               <p>The page you're looking for doesn't exist.</p>
             </div>
@@ -424,5 +496,16 @@ const App = () => {
     </div>
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP — root export
+// BusinessProvider wraps AppShell so every component in the tree can call
+// useBusinessContext() — including Navbar and FloatingSwitcher.
+// ─────────────────────────────────────────────────────────────────────────────
+const App = () => (
+  <BusinessProvider>
+    <AppShell />
+  </BusinessProvider>
+);
 
 export default App;
